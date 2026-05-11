@@ -9,32 +9,42 @@ import { UsersController } from './users/users.controller';
 import { Wallet } from './wallet/wallet.entity';
 import { WalletsService } from './wallet/wallet.service';
 import { WalletsController } from './wallet/wallet.controller';
-import { Transaction } from 'typeorm';
+import { Transaction } from './transactions/transaction.entity';
 import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 3306),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
+        type: 'postgres',
+        // Support multiple naming conventions from Vercel/Neon
+        url: configService.get<string>('DATABASE_URL') || configService.get<string>('POSTGRES_URL'),
+        host: configService.get<string>('PGHOST') || configService.get<string>('POSTGRES_HOST'),
+        port: configService.get<number>('PGPORT') || configService.get<number>('POSTGRES_PORT') || 5432,
+        username: configService.get<string>('PGUSER') || configService.get<string>('POSTGRES_USER'),
+        password: configService.get<string>('PGPASSWORD') || configService.get<string>('POSTGRES_PASSWORD'),
+        database: configService.get<string>('PGDATABASE') || configService.get<string>('POSTGRES_DATABASE'),
         entities: [User, Wallet, Transaction],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        ssl: true,
+        extra: {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        },
       }),
     }),
-    TypeOrmModule.forFeature([User, Wallet, Transaction]),
+    // Feature entities should ideally be moved to their respective modules
+    TypeOrmModule.forFeature([User, Wallet]), 
     AuthModule,
-    TransactionsModule, // Add the new TransactionsModule
+    TransactionsModule,
   ],
-  controllers: [UsersController, WalletsController],
-  providers: [UsersService, WalletsService],
+  controllers: [UsersController, WalletsController], // Suggestion: Move these to UsersModule and WalletsModule
+  providers: [UsersService, WalletsService],     // Suggestion: Move these to UsersModule and WalletsModule
 })
 export class AppModule {}
