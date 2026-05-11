@@ -187,4 +187,62 @@ export class WalletsService {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  async transfer(senderId: string, recipientEmail: string, amount: number) {
+    if (amount <= 0) {
+      throw new BadRequestException('Transfer amount must be greater than 0');
+    }
+
+    const sender = await this.userRepository.findOne({
+      where: { id: senderId },
+      relations: ['wallet'],
+    });
+    if (!sender) throw new NotFoundException('Sender not found');
+    if (!sender.wallet) throw new NotFoundException('Sender wallet not found');
+
+    if (Number(sender.wallet.balance) < amount) {
+      throw new BadRequestException('Insufficient balance');
+    }
+
+    const recipient = await this.userRepository.findOne({
+      where: { email: recipientEmail },
+      relations: ['wallet'],
+    });
+    if (!recipient) throw new NotFoundException('Recipient not found');
+    if (recipient.id === senderId) {
+      throw new BadRequestException('Cannot transfer to yourself');
+    }
+
+    const recipientWallet = await this.getOrCreateWallet(recipient.id);
+
+    const reference = `transfer_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    sender.wallet.balance = Number(sender.wallet.balance) - amount;
+    await this.walletRepository.save(sender.wallet);
+
+    recipientWallet.balance = Number(recipientWallet.balance) + amount;
+    await this.walletRepository.save(recipientWallet);
+
+    await this.transactionsService.createTransaction(
+      sender,
+      amount,
+      reference,
+      TransactionStatus.SUCCESS,
+      TransactionType.TRANSFER,
+    );
+
+    await this.transactionsService.createTransaction(
+      recipient,
+      amount,
+      reference,
+      TransactionStatus.SUCCESS,
+      TransactionType.TRANSFER,
+    );
+
+    return {
+      success: true,
+      message: `Successfully transferred ${amount} to ${recipientEmail}`,
+      reference,
+    };
+  }
 }

@@ -67,8 +67,8 @@ export class WalletsController {
         'amount',
         { status: TransactionStatus.SUCCESS, type: TransactionType.DEPOSIT },
       );
-    // TypeORM's sum returns a string, convert to number
-    return { totalRevenue: parseFloat(totalRevenue || '0') };
+    // TypeORM's sum returns string | null, convert to number
+    return { totalRevenue: parseFloat(String(totalRevenue || '0')) };
   }
 
   /**
@@ -84,5 +84,14 @@ export class WalletsController {
     const p = parseInt(page, 10);
     const l = parseInt(limit, 10);
     return this.walletsService.getUsersBalances(p, l);
+  }
+
+  @Post('transfer')
+  async transfer(
+    @Req() req: any,
+    @Body('recipientEmail') recipientEmail: string,
+    @Body('amount') amount: number,
+  ) {
+    return this.walletsService.transfer(req.user.id, recipientEmail, amount);
   }
 }

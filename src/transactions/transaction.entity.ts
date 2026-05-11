@@ -16,7 +16,7 @@ export enum TransactionStatus {
 export enum TransactionType {
   DEPOSIT = 'deposit',
   WITHDRAWAL = 'withdrawal',
-  // Add other types as needed, e.g., 'PROMOTER_COMMISSION', 'PURCHASE'
+  TRANSFER = 'transfer',
 }
 
 @Entity()
