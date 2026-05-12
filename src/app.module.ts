@@ -23,7 +23,7 @@ import { TransactionsModule } from './transactions/transactions.module';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         // Support multiple naming conventions from Vercel/Neon
-        url: configService.get<string>('DATABASE_URL') || configService.get<string>('POSTGRES_URL'),
+        url: configService.get<string>('DATABASE_URL') || configService.get<string>('POSTGRES_URL' ),
         host: configService.get<string>('PGHOST') || configService.get<string>('POSTGRES_HOST'),
         port: configService.get<number>('PGPORT') || configService.get<number>('POSTGRES_PORT') || 5432,
         username: configService.get<string>('PGUSER') || configService.get<string>('POSTGRES_USER'),
