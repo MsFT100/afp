@@ -13,6 +13,7 @@ export class AuthController {
       registerDto.email,
       registerDto.password,
       registerDto.displayName,
+      registerDto.phoneNumber,
       registerDto.role,
     );
   }

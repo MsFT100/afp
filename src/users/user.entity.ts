@@ -29,6 +29,9 @@ export class User {
   @Column()
   displayName: string;
 
+  @Column()
+  phoneNumber: string;
+
   @Column({ type: 'enum', enum: UserRole, default: UserRole.SUPPORT })
   role: UserRole;
 

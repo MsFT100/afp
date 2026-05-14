@@ -17,18 +17,20 @@ export class AuthService {
     email: string,
     password: string,
     displayName: string,
+    phoneNumber: string,
     role?: UserRole,
   ): Promise<User> {
     const hash = await bcrypt.hash(password, 10);
 
-    const user = this.userRepository.create({
+    const userEntity = this.userRepository.create({
       email,
       password: hash,
       displayName,
+      phoneNumber,
       role: role || UserRole.SUPPORT,
     });
 
-    return this.userRepository.save(user);
+    return this.userRepository.save(userEntity);
   }
 
   async login(
