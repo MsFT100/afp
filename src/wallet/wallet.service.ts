@@ -28,16 +28,37 @@ export class WalletsService {
 
   async getOrCreateWallet(userId: string): Promise<Wallet> {
     let wallet = await this.walletRepository.findOne({
-      where: { user: { id: userId } },
+      where: { user: { id: userId } }, // Find by user ID
+      relations: ['user'], // Eagerly load the user relation
     });
 
     if (!wallet) {
       const user = await this.userRepository.findOne({ where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
       wallet = this.walletRepository.create({ user, balance: 0 });
-      await this.walletRepository.save(wallet);
+      wallet = await this.walletRepository.save(wallet);
+      // Ensure the user relation is set on the newly created wallet object
+      wallet.user = user;
     }
     return wallet;
+  }
+
+  async addBalance(userId: string, amount: number): Promise<Wallet> {
+    const wallet = await this.getOrCreateWallet(userId);
+    wallet.balance = Number(wallet.balance) + amount;
+    const updatedWallet = await this.walletRepository.save(wallet);
+
+    // Record the transaction for the manual balance addition
+    const reference = `manual_deposit_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    await this.transactionsService.createTransaction(
+      wallet.user, // User is now guaranteed to be loaded with the wallet
+      amount,
+      reference,
+      TransactionStatus.SUCCESS,
+      TransactionType.MANUAL_ADJUSTMENT,
+    );
+
+    return updatedWallet;
   }
 
   async initializePayment(userId: string, amount: number) {

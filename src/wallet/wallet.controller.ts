@@ -8,6 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { WalletsService } from './wallet.service';
+import { In } from 'typeorm';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   TransactionStatus,
@@ -27,6 +28,11 @@ export class WalletsController {
   async getBalance(@Req() req: any) {
     const wallet = await this.walletsService.getOrCreateWallet(req.user.id);
     return { balance: wallet.balance };
+  }
+
+  @Post('add-balance')
+  async addBalance(@Req() req: any, @Body('amount') amount: number) {
+    return this.walletsService.addBalance(req.user.id, amount);
   }
 
   @Post('initialize')
@@ -65,7 +71,10 @@ export class WalletsController {
     const totalRevenue =
       await this.walletsService.transactionsService.transactionsRepository.sum(
         'amount',
-        { status: TransactionStatus.SUCCESS, type: TransactionType.DEPOSIT },
+        { 
+          status: TransactionStatus.SUCCESS, 
+          type: In([TransactionType.DEPOSIT, TransactionType.MANUAL_ADJUSTMENT]) 
+        },
       );
     // TypeORM's sum returns string | null, convert to number
     return { totalRevenue: parseFloat(String(totalRevenue || '0')) };

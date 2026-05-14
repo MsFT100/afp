@@ -17,6 +17,7 @@ export enum TransactionType {
   DEPOSIT = 'deposit',
   WITHDRAWAL = 'withdrawal',
   TRANSFER = 'transfer',
+  MANUAL_ADJUSTMENT = 'manual_adjustment',
 }
 
 @Entity()

@@ -15,6 +15,7 @@ export class AuthController {
       registerDto.displayName,
       registerDto.phoneNumber,
       registerDto.role,
+      registerDto.promoCode,
     );
   }
 
