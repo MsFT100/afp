@@ -48,51 +48,15 @@ export class WalletsController {
     return this.walletsService.verifyPayment(req.user.id, reference);
   }
 
-  /**
-   * Admin endpoint: Get the last N transactions
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get('admin/transactions')
-  async getAdminTransactions(@Query('limit') limit: string = '50') {
-    const parsedLimit = parseInt(limit, 10);
-    return this.walletsService.transactionsService.findRecentTransactions(
-      parsedLimit,
-    );
+  @Post('paypal/initiate')
+  async initiatePayPal(@Req() req: any, @Body('amount') amount: number) {
+    return this.walletsService.initiatePayPalPayment(req.user.id, amount);
   }
 
-  /**
-   * Admin endpoint: Get total money made from successful deposits
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get('admin/revenue')
-  async getAdminRevenue() {
-    const totalRevenue =
-      await this.walletsService.transactionsService.transactionsRepository.sum(
-        'amount',
-        { 
-          status: TransactionStatus.SUCCESS, 
-          type: In([TransactionType.DEPOSIT, TransactionType.MANUAL_ADJUSTMENT]) 
-        },
-      );
-    // TypeORM's sum returns string | null, convert to number
-    return { totalRevenue: parseFloat(String(totalRevenue || '0')) };
-  }
-
-  /**
-   * Admin endpoint: Get all users with their roles and balances
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get('admin/users')
-  async getAdminUsers(
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-  ) {
-    const p = parseInt(page, 10);
-    const l = parseInt(limit, 10);
-    return this.walletsService.getUsersBalances(p, l);
+  @Post('paypal/verify')
+  async verifyPayPal(@Req() req: any, @Body('orderId') orderId: string) {
+    // The frontend will send the orderId obtained from PayPal's redirect
+    return this.walletsService.verifyPayPalPayment(req.user.id, orderId);
   }
 
   @Post('transfer')

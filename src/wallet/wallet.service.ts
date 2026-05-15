@@ -14,6 +14,8 @@ import {
   TransactionType,
 } from '../transactions/transaction.entity';
 import { TransactionsService } from '../transactions/transactions.service';
+import { PaystackService } from '../paystack/paystack.service';
+import { PayPalService } from '../paypal/paypal.service';
 
 @Injectable()
 export class WalletsService {
@@ -22,6 +24,8 @@ export class WalletsService {
     private walletRepository: Repository<Wallet>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private payPalService: PayPalService, // Inject PayPalService
+    private paystackService: PaystackService, // Inject PaystackService
     private configService: ConfigService,
     public transactionsService: TransactionsService, // Inject the new service
   ) {}
@@ -83,6 +87,52 @@ export class WalletsService {
     return updatedWallet;
   }
 
+  async initiatePayPalPayment(userId: string, amount: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Create a pending transaction record
+    const pendingTransaction = await this.transactionsService.createTransaction(
+      user,
+      amount,
+      `paypal_init_${Date.now()}`, // Temporary reference
+      TransactionStatus.PENDING,
+      TransactionType.PAYPAL_DEPOSIT,
+    );
+
+    try {
+      const order = await this.payPalService.createOrder(amount);
+      // Update the transaction reference with PayPal's order ID
+      pendingTransaction.reference = order.id;
+      await this.transactionsService.transactionsRepository.save(pendingTransaction);
+      return order; // Return PayPal order details to the frontend
+    } catch (error) {
+      pendingTransaction.status = TransactionStatus.FAILED;
+      await this.transactionsService.transactionsRepository.save(pendingTransaction);
+      throw error; // Re-throw the PayPal error
+    }
+  }
+
+  async verifyPayPalPayment(userId: string, orderId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const capturedOrder = await this.payPalService.captureOrder(orderId);
+
+    if (capturedOrder.status !== 'COMPLETED') {
+      throw new BadRequestException('PayPal payment not completed.');
+    }
+
+    const amountReceived = parseFloat(capturedOrder.purchase_units[0].payments.captures[0].amount.value);
+
+    // Update wallet balance and transaction status
+    const wallet = await this.getOrCreateWallet(userId);
+    wallet.balance = Number(wallet.balance) + amountReceived;
+    await this.walletRepository.save(wallet);
+
+    return this.transactionsService.updateTransactionStatus(orderId, TransactionStatus.SUCCESS, amountReceived);
+  }
+
   async initializePayment(userId: string, amount: number) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -95,65 +145,78 @@ export class WalletsService {
       TransactionStatus.PENDING,
       TransactionType.DEPOSIT,
     );
-    const paystackSecret = this.configService.get<string>(
-      'PAYSTACK_SECRET_KEY',
-    );
 
-    const response = await fetch(
-      'https://api.paystack.co/transaction/initialize',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${paystackSecret}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: user.email,
-          amount: amount * 100, // Paystack expects amount in kobo
-          callback_url: `${this.configService.get<string>('PAYSTACK_CALLBACK_URL')}?transactionRef=${pendingTransaction.reference}`,
-        }),
-      },
-    );
+    const callbackUrl = `${this.configService.get<string>(
+      'PAYSTACK_CALLBACK_URL',
+    )}?transactionRef=${pendingTransaction.reference}`;
 
-    const data = await response.json();
-    if (!data.status) {
-      // Update pending transaction to failed if initialization fails
-      pendingTransaction.status = TransactionStatus.FAILED;
-      await this.transactionsService.createTransaction(
-        user,
+    try {
+      const data: any = await this.paystackService.initializeTransaction(
+        user.email,
         amount,
-        pendingTransaction.reference,
-        TransactionStatus.FAILED,
-        TransactionType.DEPOSIT,
+        callbackUrl,
       );
 
-      throw new BadRequestException(
-        data.message || 'Paystack initialization failed',
-      );
+      if (!data.status) {
+        throw new Error(data.message || 'Paystack initialization failed');
+      }
+
+      return data.data; // Returns authorization_url and reference
+    } catch (error) {
+      pendingTransaction.status = TransactionStatus.FAILED;
+      await this.transactionsService.transactionsRepository.save(pendingTransaction);
+      const message = error instanceof Error ? error.message : 'Paystack initialization failed';
+      throw new BadRequestException(message);
+    }
+  }
+
+  // New method for processing webhooks
+  async creditUserWalletFromWebhook(
+    userId: string,
+    amount: number,
+    reference: string,
+    type: TransactionType = TransactionType.DEPOSIT,
+  ): Promise<Wallet> {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    // Check if this transaction has already been successfully processed
+    const existingTransaction = await this.transactionsService.transactionsRepository.findOne({
+      where: { reference, status: TransactionStatus.SUCCESS },
+    });
+
+    if (existingTransaction) {
+      // Transaction already processed, no need to update balance again
+      this.transactionsService.updateTransactionStatus(reference, TransactionStatus.SUCCESS, amount);
+      return wallet;
     }
 
-    return data.data; // Returns authorization_url and reference
+    // Update wallet balance
+    wallet.balance = Number(wallet.balance) + amount;
+    const updatedWallet = await this.walletRepository.save(wallet);
+
+    // Update or create transaction record
+    await this.transactionsService.updateTransactionStatus(reference, TransactionStatus.SUCCESS, amount)
+      .catch(async () => { // If updateTransactionStatus throws because no pending transaction found, create one
+        await this.transactionsService.createTransaction(
+          wallet.user,
+          amount,
+          reference,
+          TransactionStatus.SUCCESS,
+          type,
+        );
+      });
+    return updatedWallet;
   }
 
   async verifyPayment(userId: string, reference: string) {
-    const paystackSecret = this.configService.get<string>(
-      'PAYSTACK_SECRET_KEY',
-    );
-
-    const response = await fetch(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${paystackSecret}`,
-        },
-      },
-    );
-
-    const data = await response.json();
+    const data: any = await this.paystackService.verifyTransaction(reference);
 
     if (!data.status || data.data.status !== 'success') {
-      throw new BadRequestException('Transaction was not successful');
+      // If the transaction failed, ensure we mark our local record as failed too
+      await this.transactionsService.updateTransactionStatus(reference, TransactionStatus.FAILED);
+      throw new BadRequestException(
+        data.message || 'Transaction was not successful',
+      );
     }
 
     const wallet = await this.getOrCreateWallet(userId);

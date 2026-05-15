@@ -84,15 +84,4 @@ export class UsersController {
 
     return this.usersService.findReferralsByPromoter(id);
   }
-
-  /**
-   * Admin endpoint: Get the total number of registered users (players)
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get('admin/count')
-  async getTotalPlayers(): Promise<{ count: number }> {
-    const count = await this.usersService.getTotalUsersCount();
-    return { count };
-  }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -38,5 +38,17 @@ export class TransactionsService {
       take: limit,
       relations: ['user'], // Load user data along with transactions
     });
+  }
+
+  async updateTransactionStatus(reference: string, status: TransactionStatus, amount?: number): Promise<Transaction> {
+    const transaction = await this.transactionsRepository.findOne({ where: { reference } });
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with reference ${reference} not found`);
+    }
+    transaction.status = status;
+    if (amount !== undefined) {
+      transaction.amount = amount; // Update amount if provided (e.g., after verification)
+    }
+    return this.transactionsRepository.save(transaction);
   }
 }

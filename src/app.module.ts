@@ -14,10 +14,16 @@ import { WalletsService } from './wallet/wallet.service';
 import { Avatar } from './avatars/avatar.entity';
 import { AvatarsController } from './avatars/avatars.controller';
 import { Cue } from './cues/cue.entity';
-import { CuesController } from './cues/cues.controller';
 import { CuesService } from './cues/cues.service';
-import { CloudinaryModule } from './transactions/cloudinary.module';
 import { AvatarsService } from './avatars/avatars.service';
+import { AdminModule } from './admin/admin.module';
+import { CuesController } from './cues/cues.controller';
+import { PayPalModule } from './paypal/paypal.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { PaystackWebhookModule } from './paystack/paystack.webhook.module';
+import { PaystackModule } from './paystack/paystack.module';
+import { PayPalWebhookModule } from './paypal/paypal.webhook.module';
+
 
 
 @Module({
@@ -74,6 +80,11 @@ import { AvatarsService } from './avatars/avatars.service';
     AuthModule,
     TransactionsModule,
     CloudinaryModule,
+    AdminModule,
+    PayPalModule, // Add PayPalModule here
+    PaystackModule,
+    PaystackWebhookModule,
+    PayPalWebhookModule,
   ],
   controllers: [UsersController, WalletsController, AvatarsController, CuesController], 
   providers: [UsersService, WalletsService, AvatarsService, CuesService],

@@ -6,6 +6,8 @@ import {
   OneToMany,
   OneToOne,
   JoinColumn,
+  UpdateDateColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { Wallet } from '../wallet/wallet.entity';
 import { Transaction } from '../transactions/transaction.entity';
@@ -42,6 +44,9 @@ export class User {
   @Column({ default: true })
   isActive!: boolean;
 
+  @Column({ type: 'varchar', nullable: true })
+  deactivationReason?: string | null;
+
   @Column({ default: () => "\"'0'\"" })
   ownedCues!: string;
 
@@ -51,15 +56,15 @@ export class User {
   @Column({ default: "" })
   ownedAvatars!: string;
 
-  @Column({ nullable: true })
-  activeAvatarId!: string;
+  @Column({ type: 'varchar', nullable: true })
+  activeAvatarId?: string | null;
 
   @ManyToOne(() => Avatar)
   @JoinColumn({ name: 'activeAvatarId' })
   activeAvatar!: Avatar;
 
-  @Column({ nullable: true })
-  activeCueId!: string;
+  @Column({ type: 'varchar', nullable: true })
+  activeCueId?: string | null;
 
   @ManyToOne(() => Cue)
   @JoinColumn({ name: 'activeCueId' })
@@ -71,8 +76,8 @@ export class User {
   @Column({ default: false })
   ownEmojiPack!: boolean;
 
-  @Column({ unique: true, nullable: true })
-  promoCode?: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  promoCode?: string | null;
 
   @ManyToOne(() => User, (user) => user.referredUsers, { nullable: true })
   referredBy?: User;
@@ -85,4 +90,10 @@ export class User {
 
   @OneToMany(() => Transaction, (transaction) => transaction.user)
   transactions!: Transaction[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

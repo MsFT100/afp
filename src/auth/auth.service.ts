@@ -47,7 +47,7 @@ export class AuthService {
       password: hash,
       displayName,
       phoneNumber,
-      role: role || UserRole.SUPPORT,
+      role: role || UserRole.PLAYER,
       promoCode,
     });
 
