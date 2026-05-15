@@ -123,14 +123,16 @@ export class WalletsService {
       throw new BadRequestException('PayPal payment not completed.');
     }
 
-    const amountReceived = parseFloat(capturedOrder.purchase_units[0].payments.captures[0].amount.value);
+    const amountReceived = parseFloat(
+      capturedOrder.purchase_units[0].payments.captures[0].amount.value,
+    );
 
-    // Update wallet balance and transaction status
-    const wallet = await this.getOrCreateWallet(userId);
-    wallet.balance = Number(wallet.balance) + amountReceived;
-    await this.walletRepository.save(wallet);
-
-    return this.transactionsService.updateTransactionStatus(orderId, TransactionStatus.SUCCESS, amountReceived);
+    return this.creditUserWalletFromWebhook(
+      userId,
+      amountReceived,
+      orderId,
+      TransactionType.PAYPAL_DEPOSIT,
+    );
   }
 
   async initializePayment(userId: string, amount: number) {
@@ -219,56 +221,14 @@ export class WalletsService {
       );
     }
 
-    const wallet = await this.getOrCreateWallet(userId);
+    const amountReceived = data.data.amount / 100;
 
-    // Check if a transaction with this reference already exists and is successful
-    const existingTransaction =
-      await this.transactionsService.transactionsRepository.findOne({
-        where: { reference, status: TransactionStatus.SUCCESS },
-      });
-
-    if (existingTransaction) {
-      // If already processed, just return the wallet
-      return wallet;
-    }
-
-    const amountReceived = data.data.amount / 100; // Convert kobo to Naira/Main unit
-
-    try {
-      // Find or create the transaction record
-      let transaction =
-        await this.transactionsService.transactionsRepository.findOne({
-          where: { reference },
-          relations: ['user'],
-        });
-
-      if (!transaction) {
-        // If for some reason the initial pending transaction wasn't saved or found, create a new one
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
-        });
-        if (!user) throw new NotFoundException('User not found');
-        transaction = await this.transactionsService.createTransaction(
-          user,
-          amountReceived,
-          reference,
-          TransactionStatus.SUCCESS,
-          TransactionType.DEPOSIT,
-        );
-      } else {
-        // Update existing pending transaction
-        transaction.status = TransactionStatus.SUCCESS;
-        transaction.amount = amountReceived; // Ensure amount matches verified amount
-        await this.transactionsService.transactionsRepository.save(transaction);
-      }
-
-      wallet.balance = Number(wallet.balance) + amountReceived;
-      wallet.lastTransactionRef = reference; // Keep track of the last successful reference
-
-      return await this.walletRepository.save(wallet);
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to update wallet balance');
-    }
+    return this.creditUserWalletFromWebhook(
+      userId,
+      amountReceived,
+      reference,
+      TransactionType.DEPOSIT,
+    );
   }
 
   async getUsersBalances(page: number, limit: number) {
