@@ -43,6 +43,28 @@ export class WalletsService {
     return wallet;
   }
 
+  async deductBalance(userId: string, amount: number, type: TransactionType, reference: string): Promise<Wallet> {
+    const wallet = await this.getOrCreateWallet(userId);
+    const currentBalance = Number(wallet.balance);
+
+    if (currentBalance < amount) {
+      throw new BadRequestException('Insufficient balance for this purchase');
+    }
+
+    wallet.balance = currentBalance - amount;
+    const updatedWallet = await this.walletRepository.save(wallet);
+
+    await this.transactionsService.createTransaction(
+      wallet.user,
+      amount,
+      reference,
+      TransactionStatus.SUCCESS,
+      type,
+    );
+
+    return updatedWallet;
+  }
+
   async addBalance(userId: string, amount: number): Promise<Wallet> {
     const wallet = await this.getOrCreateWallet(userId);
     wallet.balance = Number(wallet.balance) + amount;

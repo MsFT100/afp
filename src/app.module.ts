@@ -11,6 +11,14 @@ import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
 import { WalletsController } from './wallet/wallet.controller';
 import { WalletsService } from './wallet/wallet.service';
+import { Avatar } from './avatars/avatar.entity';
+import { AvatarsController } from './avatars/avatars.controller';
+import { Cue } from './cues/cue.entity';
+import { CuesController } from './cues/cues.controller';
+import { CuesService } from './cues/cues.service';
+import { CloudinaryModule } from './transactions/cloudinary.module';
+import { AvatarsService } from './avatars/avatars.service';
+
 
 @Module({
   imports: [
@@ -56,17 +64,18 @@ import { WalletsService } from './wallet/wallet.service';
               },
             ],
           },
-          entities: [User, Wallet, Transaction],
+          entities: [User, Wallet, Transaction, Avatar, Cue],
           synchronize: configService.get<string>('NODE_ENV') !== 'production',
         };
       },
     }),
     // Feature entities should ideally be moved to their respective modules
-    TypeOrmModule.forFeature([User, Wallet, Transaction]), 
+    TypeOrmModule.forFeature([User, Wallet, Transaction, Avatar, Cue]), 
     AuthModule,
     TransactionsModule,
+    CloudinaryModule,
   ],
-  controllers: [UsersController, WalletsController], // Suggestion: Move these to UsersModule and WalletsModule
-  providers: [UsersService, WalletsService],     // Suggestion: Move these to UsersModule and WalletsModule
+  controllers: [UsersController, WalletsController, AvatarsController, CuesController], 
+  providers: [UsersService, WalletsService, AvatarsService, CuesService],
 })
 export class AppModule {}

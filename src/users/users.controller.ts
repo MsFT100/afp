@@ -6,6 +6,8 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  Patch,
+  Body,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserRole } from './user.entity';
@@ -16,6 +18,51 @@ import { RolesGuard } from '../auth/roles.guard';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/data')
+  async getMyData(@Request() req) {
+    return this.usersService.getUserData(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/used-cue')
+  async updateUsedCue(
+    @Request() req,
+    @Body() body: { index: number; power: number; aim: number; time: number },
+  ) {
+    return this.usersService.setUsedCue(
+      req.user.id,
+      body.index,
+      body.power,
+      body.aim,
+      body.time,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/active-avatar')
+  async updateActiveAvatar(@Request() req, @Body('avatarId') avatarId: string) {
+    return this.usersService.setActiveAvatar(req.user.id, avatarId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/active-cue')
+  async updateActiveCue(@Request() req, @Body('cueId') cueId: string) {
+    return this.usersService.setActiveCue(req.user.id, cueId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/buy-cue')
+  async buyCue(@Request() req, @Body('index') index: number, @Body('cost') cost: number) {
+    return this.usersService.addBoughtCue(req.user.id, index, cost);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/buy-chat')
+  async buyChat(@Request() req, @Body('index') index: number, @Body('cost') cost: number) {
+    return this.usersService.addBoughtChat(req.user.id, index, cost);
+  }
 
   /**
    * Fetch all users referred by a specific promoter ID

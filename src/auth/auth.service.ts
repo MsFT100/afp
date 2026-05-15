@@ -25,7 +25,8 @@ export class AuthService {
     role?: UserRole,
     promoCode?: string,
   ): Promise<User> {
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await this.userRepository.findOne({ where: { email: normalizedEmail } });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -42,7 +43,7 @@ export class AuthService {
     const hash = await bcrypt.hash(password, 10);
 
     const userEntity = this.userRepository.create({
-      email,
+      email: normalizedEmail,
       password: hash,
       displayName,
       phoneNumber,

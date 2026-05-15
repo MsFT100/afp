@@ -18,32 +18,33 @@ export enum TransactionType {
   WITHDRAWAL = 'withdrawal',
   TRANSFER = 'transfer',
   MANUAL_ADJUSTMENT = 'manual_adjustment',
+  PURCHASE = 'purchase',
 }
 
 @Entity()
 export class Transaction {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @ManyToOne(() => User, (user) => user.transactions)
-  user: User;
+  user!: User;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
-  amount: number;
+  amount!: number;
 
   @Column({ unique: true })
-  reference: string; // Paystack transaction reference
+  reference!: string; // Paystack transaction reference
 
   @Column({
     type: 'enum',
     enum: TransactionStatus,
     default: TransactionStatus.PENDING,
   })
-  status: TransactionStatus;
+  status!: TransactionStatus;
 
   @Column({ type: 'enum', enum: TransactionType })
-  type: TransactionType;
+  type!: TransactionType;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt: Date = new Date();
 }
