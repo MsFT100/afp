@@ -13,6 +13,7 @@ import { AvatarsService } from '../avatars/avatars.service';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { PayPalModule } from '../paypal/paypal.module';
 import { PaystackModule } from '../paystack/paystack.module';
+import { MatchmakingModule } from '../matchmaking/matchmaking.module';
 
 
 @Module({
@@ -22,6 +23,7 @@ import { PaystackModule } from '../paystack/paystack.module';
     AuthModule,
     PayPalModule,
     PaystackModule,
+    MatchmakingModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AvatarsService, WalletsService, TransactionsService],

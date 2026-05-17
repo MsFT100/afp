@@ -22,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Rarity } from '../avatars/avatar.entity';
 import 'multer';
 import { AdminService } from './admin.service';
+import { MatchmakingService } from '../matchmaking/matchmaking.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,6 +32,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly avatarsService: AvatarsService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly matchmakingService: MatchmakingService,
   ) {}
 
   @Get('stats/global')
@@ -141,5 +143,10 @@ export class AdminController {
   @Post('users/:id/remove-coins')
   async removeCoins(@Param('id') id: string, @Body('amount') amount: number) {
     return this.adminService.removeCoinsFromUser(id, amount);
+  }
+
+  @Get('matches')
+  async listMatches() {
+    return this.matchmakingService.findAll();
   }
 }
