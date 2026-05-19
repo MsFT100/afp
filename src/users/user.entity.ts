@@ -76,6 +76,9 @@ export class User {
   @Column({ default: false })
   ownEmojiPack!: boolean;
 
+  @Column({ type: 'varchar', name: 'country_code', nullable: true })
+  countryCode?: string | null;
+
   @Column({ type: 'varchar', unique: true, nullable: true })
   promoCode?: string | null;
 

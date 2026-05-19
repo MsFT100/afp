@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Avatar, Rarity } from './avatar.entity';
 import { User } from '../users/user.entity';
 import { WalletsService } from '../wallet/wallet.service';
@@ -33,6 +33,19 @@ export class AvatarsService {
   async findAll(isAdmin: boolean = false): Promise<Avatar[]> {
     if (isAdmin) return this.avatarRepository.find();
     return this.avatarRepository.find({ where: { isPublished: true } });
+  }
+
+  async findOwned(userId: string): Promise<Avatar[]> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user || !user.ownedAvatars) return [];
+
+    const ids = user.ownedAvatars
+      .split(';')
+      .map((id) => id.replace(/'/g, ''))
+      .filter((id) => id.length > 0);
+
+    if (ids.length === 0) return [];
+    return this.avatarRepository.find({ where: { id: In(ids) } });
   }
 
   async remove(id: string): Promise<void> {

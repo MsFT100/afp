@@ -39,6 +39,12 @@ export class AvatarsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('my')
+  async getMyAvatars(@Req() req) {
+    return this.avatarsService.findOwned(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get()
   async list() {
     return this.avatarsService.findAll(false);
