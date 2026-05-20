@@ -25,7 +25,8 @@ import { PaystackWebhookModule } from './paystack/paystack.webhook.module';
 import { PaystackModule } from './paystack/paystack.module';
 import { PayPalWebhookModule } from './paypal/paypal.webhook.module';
 import { MatchmakingModule } from './matchmaking/matchmaking.module';
-
+import { CurrencyPairsModule } from './currency/currency-pairs.module';
+import { CurrencyPair } from './currency/currency-pair.entity';
 
 
 @Module({
@@ -72,13 +73,13 @@ import { MatchmakingModule } from './matchmaking/matchmaking.module';
               },
             ],
           },
-          entities: [User, Wallet, Transaction, Avatar, Cue, Match],
+          entities: [User, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair],
           synchronize: configService.get<string>('NODE_ENV') !== 'production',
         };
       },
     }),
     // Feature entities should ideally be moved to their respective modules
-    TypeOrmModule.forFeature([User, Wallet, Transaction, Avatar, Cue, Match]), 
+    TypeOrmModule.forFeature([User, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair]), 
     AuthModule,
     TransactionsModule,
     CloudinaryModule,
@@ -88,6 +89,7 @@ import { MatchmakingModule } from './matchmaking/matchmaking.module';
     PaystackWebhookModule,
     PayPalWebhookModule,
     MatchmakingModule,
+    CurrencyPairsModule,
   ],
   controllers: [UsersController, WalletsController, AvatarsController, CuesController], 
   providers: [UsersService, WalletsService, AvatarsService, CuesService],
