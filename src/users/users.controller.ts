@@ -14,6 +14,7 @@ import { User, UserRole } from './user.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { UpdatePhoneDto } from './update-phone.dto';
 
 @Controller('users')
 export class UsersController {
@@ -83,5 +84,11 @@ export class UsersController {
     }
 
     return this.usersService.findReferralsByPromoter(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/phone')
+  async updatePhone(@Request() req, @Body() updatePhoneDto: UpdatePhoneDto) {
+    return this.usersService.updatePhone(req.user.id, updatePhoneDto.phoneNumber);
   }
 }

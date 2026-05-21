@@ -58,7 +58,11 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<{ token: string; user: Partial<User> }> {
-    const user = await this.userRepository.findOne({ where: { email } });
+    // Use QueryBuilder to explicitly select the hidden password field
+    const user = await this.userRepository.createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!user) {
       throw new UnauthorizedException('User not found');

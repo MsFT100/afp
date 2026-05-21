@@ -8,16 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { WalletsService } from './wallet.service';
-import { In } from 'typeorm';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import {
-  TransactionStatus,
-  TransactionType,
-} from '../transactions/transaction.entity';
-import { UserRole } from '../users/user.entity';
-
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('wallets')
 @UseGuards(JwtAuthGuard)
@@ -35,15 +26,15 @@ export class WalletsController {
     return this.walletsService.addBalance(req.user.id, amount);
   }
 
-  @Post('initialize')
-  async initialize(@Req() req: any, @Body('amount') amount: number) {
+  @Post('paystack/initialize')
+  async initializePaystack(@Req() req: any, @Body('amount') amount: number) {
     return this.walletsService.initializePayment(req.user.id, amount);
   }
 
   /**
    * This is called by the frontend after a successful Paystack redirect
    */
-  @Get('verify')
+  @Get('paystack/verify')
   async verify(@Req() req: any, @Query('reference') reference: string) {
     return this.walletsService.verifyPayment(req.user.id, reference);
   }

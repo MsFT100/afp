@@ -147,4 +147,11 @@ export class UsersService {
   async getTotalUsersCount(): Promise<number> {
     return this.usersRepository.count();
   }
+
+  async updatePhone(userId: string, phoneNumber: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    user.phoneNumber = phoneNumber;
+    return this.usersRepository.save(user);
+  }
 }

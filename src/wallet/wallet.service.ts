@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -19,6 +20,8 @@ import { PayPalService } from '../paypal/paypal.service';
 
 @Injectable()
 export class WalletsService {
+  private readonly logger = new Logger(WalletsService.name);
+
   constructor(
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
@@ -148,14 +151,22 @@ export class WalletsService {
       TransactionType.DEPOSIT,
     );
 
-    const callbackUrl = `${this.configService.get<string>(
-      'PAYSTACK_CALLBACK_URL',
-    )}?transactionRef=${pendingTransaction.reference}`;
+    const baseUrl = this.configService.get<string>('PAYSTACK_CALLBACK_URL');
+    
+    if (!baseUrl) {
+      this.logger.error('PAYSTACK_CALLBACK_URL is not defined in environment variables');
+      throw new InternalServerErrorException('Payment configuration error');
+    }
+
+    const callbackUrl = `${baseUrl}?transactionRef=${pendingTransaction.reference}`;
+
+    // Paystack expects amount in the smallest currency unit (e.g., Kobo)
+    const amountInKobo = Math.round(amount * 100);
 
     try {
       const data: any = await this.paystackService.initializeTransaction(
         user.email,
-        amount,
+        amountInKobo,
         callbackUrl,
       );
 
@@ -163,8 +174,11 @@ export class WalletsService {
         throw new Error(data.message || 'Paystack initialization failed');
       }
 
+      //console.log(`Paystack initialization successful for user ${userId}:`, data);
+
       return data.data; // Returns authorization_url and reference
-    } catch (error) {
+    } catch (error: any) {
+      this.logger.error(`Paystack init failed for user ${userId}: ${error?.message || error}`, error?.stack);
       pendingTransaction.status = TransactionStatus.FAILED;
       await this.transactionsService.transactionsRepository.save(pendingTransaction);
       const message = error instanceof Error ? error.message : 'Paystack initialization failed';
