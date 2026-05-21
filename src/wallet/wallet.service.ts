@@ -110,6 +110,11 @@ export class WalletsService {
       await this.transactionsService.transactionsRepository.save(pendingTransaction);
       return order; // Return PayPal order details to the frontend
     } catch (error) {
+      const clientId = this.configService.get('PAYPAL_CLIENT_ID');
+      if (!clientId) {
+        this.logger.error('PAYPAL_CLIENT_ID is undefined. Check your .env file.');
+      }
+      this.logger.error(`PayPal order creation failed for user ${userId}: ${error.message}`, error.stack);
       pendingTransaction.status = TransactionStatus.FAILED;
       await this.transactionsService.transactionsRepository.save(pendingTransaction);
       throw error; // Re-throw the PayPal error
@@ -123,6 +128,7 @@ export class WalletsService {
     const capturedOrder = await this.payPalService.captureOrder(orderId);
 
     if (capturedOrder.status !== 'COMPLETED') {
+      this.logger.warn(`PayPal capture attempted for order ${orderId} but status was ${capturedOrder.status}`);
       throw new BadRequestException('PayPal payment not completed.');
     }
 
