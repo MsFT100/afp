@@ -1,6 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import fetch from 'node-fetch';
 
 @Injectable()
 export class PaystackService {
@@ -14,6 +13,7 @@ export class PaystackService {
   }
 
   async initializeTransaction(email: string, amount: number, callbackUrl: string): Promise<any> {
+
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
