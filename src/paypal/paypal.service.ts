@@ -18,7 +18,7 @@ export class PayPalService {
     }
   }
 
-  private async generateAccessToken(): Promise<string> {
+  public async generateAccessToken(): Promise<string> {
     const auth = Buffer.from(`${this.PAYPAL_CLIENT_ID}:${this.PAYPAL_CLIENT_SECRET}`).toString('base64');
     const response = await fetch(`${this.PAYPAL_API_BASE_URL}/v1/oauth2/token`, {
       method: 'POST',

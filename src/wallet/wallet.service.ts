@@ -110,14 +110,16 @@ export class WalletsService {
       await this.transactionsService.transactionsRepository.save(pendingTransaction);
       return order; // Return PayPal order details to the frontend
     } catch (error) {
-      const clientId = this.configService.get('PAYPAL_CLIENT_ID');
-      if (!clientId) {
-        this.logger.error('PAYPAL_CLIENT_ID is undefined. Check your .env file.');
+      if (error instanceof Error) {
+        this.logger.error(`PayPal order creation failed for user ${userId}: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`PayPal order creation failed for user ${userId}: Unknown error`, error);
       }
-      this.logger.error(`PayPal order creation failed for user ${userId}: ${error.message}`, error.stack);
       pendingTransaction.status = TransactionStatus.FAILED;
       await this.transactionsService.transactionsRepository.save(pendingTransaction);
-      throw error; // Re-throw the PayPal error
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : 'Failed to initiate PayPal payment due to an unknown error'
+      );
     }
   }
 
@@ -184,10 +186,14 @@ export class WalletsService {
 
       return data.data; // Returns authorization_url and reference
     } catch (error: any) {
-      this.logger.error(`Paystack init failed for user ${userId}: ${error?.message || error}`, error?.stack);
+      if (error instanceof Error) {
+        this.logger.error(`Paystack init failed for user ${userId}: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Paystack init failed for user ${userId}: Unknown error`, error);
+      }
       pendingTransaction.status = TransactionStatus.FAILED;
       await this.transactionsService.transactionsRepository.save(pendingTransaction);
-      const message = error instanceof Error ? error.message : 'Paystack initialization failed';
+      const message = error instanceof Error ? error.message : 'Paystack initialization failed due to an unknown error';
       throw new BadRequestException(message);
     }
   }

@@ -1,17 +1,18 @@
-import { Controller, Post, Headers, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Headers, HttpCode, HttpStatus } from '@nestjs/common';
 import { PayPalWebhookService } from './paypal.webhook.service';
 
 @Controller('paypal')
 export class PayPalWebhookController {
-  constructor(private readonly payPalWebhookService: PayPalWebhookService) {}
+  constructor(private readonly paypalWebhookService: PayPalWebhookService) {}
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
-    @Headers() headers: any,
-    @Body() payload: any,
+    @Headers() headers: Record<string, string>,
+    @Body() body: any,
   ) {
-    await this.payPalWebhookService.handleWebhook(headers, payload);
+    // We return 200 OK immediately to PayPal and process logic
+    await this.paypalWebhookService.handleWebhook(headers, body);
     return { received: true };
   }
 }
