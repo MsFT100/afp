@@ -89,6 +89,16 @@ export class MatchmakingService {
       loser: players.find(p => p.id === dto.loserId),
     });
 
-    return await this.matchRepository.save(match);
+    const savedMatch = await this.matchRepository.save(match);
+
+    // Atomically update player statistics to maintain data integrity between match records and user profiles
+    await Promise.all([
+      this.playerRepository.increment({ id: dto.winnerId }, 'gamesPlayed', 1),
+      this.playerRepository.increment({ id: dto.winnerId }, 'gamesWon', 1),
+      this.playerRepository.increment({ id: dto.loserId }, 'gamesPlayed', 1),
+      this.playerRepository.increment({ id: dto.loserId }, 'gamesLost', 1),
+    ]);
+
+    return savedMatch;
   }
 }

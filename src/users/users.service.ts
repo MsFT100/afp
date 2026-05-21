@@ -23,10 +23,11 @@ export class UsersService {
   async getUserData(userId: string): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
-      relations: ['activeAvatar', 'activeCue'],
+      relations: ['activeAvatar', 'activeCue', 'wallet'],
       select: {
         id: true,
         email: true,
+        phoneNumber: true,
         displayName: true,
         role: true,
         ownedCues: true,
@@ -36,6 +37,10 @@ export class UsersService {
         activeCueId: true,
         usedCue: true,
         ownEmojiPack: true,
+        gamesWon: true,
+        gamesLost: true,
+        gamesPlayed: true,
+        wallet: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -153,5 +158,27 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
     user.phoneNumber = phoneNumber;
     return this.usersRepository.save(user);
+  }
+  
+  async updateGameStats(userId: string, isWinner: boolean): Promise<User> {
+    // First, check if the user exists to throw NotFoundException if not
+    const userExists = await this.usersRepository.count({ where: { id: userId } });
+    if (userExists === 0) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Increment gamesPlayed atomically
+    await this.usersRepository.increment({ id: userId }, 'gamesPlayed', 1);
+
+    if (isWinner) {
+      await this.usersRepository.increment({ id: userId }, 'gamesWon', 1);
+    } else {
+      await this.usersRepository.increment({ id: userId }, 'gamesLost', 1);
+    }
+    
+    // Fetch the updated user to return the latest stats
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 }

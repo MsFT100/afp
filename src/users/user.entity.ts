@@ -73,6 +73,15 @@ export class User {
   @Column({ default: () => "\"'0';'0';'0';'0'\"" })
   usedCue!: string;
 
+  @Column({ default: 0 })
+  gamesWon!: number;
+
+  @Column({ default: 0 })
+  gamesLost!: number;
+
+  @Column({ default: 0 })
+  gamesPlayed!: number;
+
   @Column({ default: false })
   ownEmojiPack!: boolean;
 
