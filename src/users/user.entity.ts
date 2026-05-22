@@ -26,6 +26,9 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  playfabId?: string | null;
+
   @Column({ unique: true })
   email!: string;
 
