@@ -18,6 +18,9 @@ export class Match {
   @Column({ comment: 'Duration in seconds' })
   duration: number = 0;
 
+  @Column({ nullable: true })
+  countryCode?: string;
+
   @ManyToMany(() => User)
   @JoinTable()
   players!: User[];

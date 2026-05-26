@@ -3,28 +3,32 @@ import { IsString, IsNumber, IsArray, IsOptional, IsUUID, Min } from 'class-vali
 export class RecordMatchDto {
   @IsArray()
   @IsUUID('4', { each: true })
-  playerIds: string[];
+  playerIds!: string[];
 
   @IsString()
-  tableName: string;
+  tableName!: string;
 
   @IsNumber()
   @Min(0)
-  entryCoins: number;
+  entryCoins!: number;
 
   @IsNumber()
   @Min(0)
-  winAmount: number;
+  winAmount!: number;
 
   @IsNumber()
   @Min(0)
-  duration: number;
+  duration!: number;
 
   @IsOptional()
   metadata?: any;
 
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
   @IsUUID()
-  winnerId: string;
+  winnerId!: string;
 
   @IsOptional()
   @IsUUID()

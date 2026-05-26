@@ -84,6 +84,7 @@ export class MatchmakingService {
       winAmount: dto.winAmount,
       duration: dto.duration,
       metadata: dto.metadata,
+      countryCode: dto.countryCode,
       players: players,
       winner: players.find(p => p.id === dto.winnerId),
       loser: players.find(p => p.id === dto.loserId),
@@ -95,6 +96,7 @@ export class MatchmakingService {
     await Promise.all([
       this.playerRepository.increment({ id: dto.winnerId }, 'gamesPlayed', 1),
       this.playerRepository.increment({ id: dto.winnerId }, 'gamesWon', 1),
+      this.playerRepository.increment({ id: dto.winnerId }, 'coins', dto.winAmount),
       this.playerRepository.increment({ id: dto.loserId }, 'gamesPlayed', 1),
       this.playerRepository.increment({ id: dto.loserId }, 'gamesLost', 1),
     ]);
