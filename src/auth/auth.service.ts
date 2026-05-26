@@ -73,6 +73,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
+    await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+
     const payload = { userId: user.id, email: user.email, role: user.role };
     const token = this.jwtService.sign(payload);
 

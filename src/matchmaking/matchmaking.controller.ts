@@ -17,11 +17,23 @@ export class MatchmakingController {
   @UseGuards(JwtAuthGuard)
   @Get('leaderboard')
   async getLeaderboard(
-    @Query('countryCode') countryCode?: string,
+    @Query('country') country?: string,
+    @Query('region') region?: string,
     @Query('metric') metric: 'wins' | 'coins' | 'winRate' = 'wins',
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 100,
+    @Query('limit') limit: number = 20,
   ) {
-    return this.matchmakingService.getLeaderboard(countryCode, metric, Number(page), Number(limit));
+    return this.matchmakingService.getLeaderboard(country, region, metric, Number(page), Number(limit));
+  }
+
+  @Get('leaderboard-world')
+  async getLeaderboardWorld(
+    @Query('country') country?: string,
+    @Query('region') region?: string,
+    @Query('metric') metric: 'wins' | 'coins' | 'winRate' = 'wins',
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.matchmakingService.getLeaderboard(country, region, metric, Number(page), Number(limit));
   }
 }

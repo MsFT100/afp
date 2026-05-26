@@ -4,7 +4,7 @@ import { User } from '../users/user.entity';
 @Entity('matches')
 export class Match {
   @PrimaryGeneratedColumn('uuid')
-  id: string = '';
+  id!: string;
 
   @Column()
   tableName: string = 'default';

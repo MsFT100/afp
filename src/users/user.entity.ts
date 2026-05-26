@@ -91,6 +91,9 @@ export class User {
   @Column({ type: 'varchar', name: 'country_code', nullable: true })
   countryCode?: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  region?: string | null;
+
   @Column({ type: 'varchar', unique: true, nullable: true })
   promoCode?: string | null;
 
@@ -108,6 +111,9 @@ export class User {
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastLoginAt?: Date | null;
 
   @UpdateDateColumn()
   updatedAt!: Date;

@@ -98,36 +98,43 @@ export class AdminService {
   }
 
   async getPlayerDetailsWithBalance(userId: string) {
-    // Fetch the user with their associated wallet
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['wallet'], // Ensure the wallet is loaded
+      relations: ['wallet'],
       select: {
         id: true,
         email: true,
         displayName: true,
+        phoneNumber: true,
         role: true,
         isActive: true,
         deactivationReason: true,
         promoCode: true,
-        createdAt: true, // Include createdAt date
-        updatedAt: true, // Include updatedAt date
+        playfabId: true,
+        countryCode: true,
+        region: true,
+        gamesWon: true,
+        gamesLost: true,
+        gamesPlayed: true,
+        ownedCues: true,
+        ownedChats: true,
+        ownedAvatars: true,
+        activeAvatarId: true,
+        activeCueId: true,
+        usedCue: true,
+        ownEmojiPack: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+        wallet: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
 
-    // Structure the response to include the wallet balance
     return {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      role: user.role,
-      isActive: user.isActive,
-      deactivationReason: user.deactivationReason,
-      promoCode: user.promoCode,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      balance: user.wallet ? Number(user.wallet.balance) : 0, // Return balance from wallet
+      ...user,
+      balance: user.wallet ? Number(user.wallet.balance) : 0,
+      wallet: undefined,
     };
   }
 

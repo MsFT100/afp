@@ -37,14 +37,35 @@ export class UsersService {
         activeCueId: true,
         usedCue: true,
         ownEmojiPack: true,
+        countryCode: true,
+        region: true,
         gamesWon: true,
         gamesLost: true,
         gamesPlayed: true,
         wallet: true,
+        lastLoginAt: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
+  }
+
+  async getAllPlayersForAdmin(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: { role: UserRole.PLAYER },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        phoneNumber: true,
+        countryCode: true,
+        lastLoginAt: true,
+        isActive: true,
+        createdAt: true,
+        gamesPlayed: true,
+      },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async setUsedCue(userId: string, index: number, power: number, aim: number, time: number) {
@@ -145,7 +166,7 @@ export class UsersService {
     // We explicitly select fields to avoid returning sensitive data like the password hash
     return this.usersRepository.find({
       where: { referredBy: { id: promoterId } },
-      select: ['id', 'email', 'displayName', 'role', 'isActive', 'promoCode'],
+      select: ['id', 'email', 'displayName', 'role', 'isActive', 'promoCode', 'lastLoginAt'],
     });
   }
 
@@ -180,5 +201,9 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     return user;
+  }
+
+  async updateLastLogin(userId: string): Promise<void> {
+    await this.usersRepository.update(userId, { lastLoginAt: new Date() });
   }
 }
