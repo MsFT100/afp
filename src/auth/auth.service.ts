@@ -2,12 +2,15 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../users/user.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +18,7 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async register(
@@ -51,7 +55,11 @@ export class AuthService {
       promoCode,
     });
 
-    return this.userRepository.save(userEntity);
+    const saved = await this.userRepository.save(userEntity);
+
+    this.mailService.sendWelcomeEmail(saved.email, saved.displayName).catch(() => {});
+
+    return saved;
   }
 
   async login(
@@ -85,6 +93,67 @@ export class AuthService {
         email: user.email,
         displayName: user.displayName,
         role: user.role,
+      },
+    };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    if (!user) return;
+
+    const token = randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 3600000);
+
+    await this.userRepository.update(user.id, { resetToken: token, resetTokenExpiry: expiry });
+
+    this.mailService.sendPasswordResetEmail(user.email, token).catch(() => {});
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { resetToken: token },
+    });
+
+    if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.update(user.id, {
+      password: hash,
+      resetToken: null,
+      resetTokenExpiry: null,
+    });
+  }
+
+  async loginWithPromoCode(promoCode: string, password: string): Promise<{ token: string; user: Partial<User> }> {
+    const user = await this.userRepository.createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.promoCode = :promoCode', { promoCode })
+      .getOne();
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid promo code');
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+
+    const payload = { userId: user.id, email: user.email, role: user.role };
+    const token = this.jwtService.sign(payload);
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        promoCode: user.promoCode,
       },
     };
   }

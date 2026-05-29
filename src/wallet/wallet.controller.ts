@@ -58,4 +58,13 @@ export class WalletsController {
   ) {
     return this.walletsService.transfer(req.user.id, recipientEmail, amount);
   }
+
+  @Post('deduct-table-fee')
+  async deductTableFee(
+    @Req() req: any,
+    @Body('amount') amount: number,
+    @Body('matchId') matchId: string,
+  ) {
+    return this.walletsService.deductTableFee(req.user.id, amount, matchId);
+  }
 }

@@ -23,6 +23,8 @@ import { Rarity } from '../avatars/avatar.entity';
 import 'multer';
 import { AdminService } from './admin.service';
 import { MatchmakingService } from '../matchmaking/matchmaking.service';
+import { CreatePromoterDto } from './dto/create-promoter.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)

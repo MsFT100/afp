@@ -169,12 +169,18 @@ export class WalletsService {
     const callbackUrl = `${baseUrl}?transactionRef=${pendingTransaction.reference}`;
 
     // Paystack expects amount in the smallest currency unit (e.g., Kobo)
-    const amountInKobo = Math.round(amount * 100);
+    //const amountInKobo = Math.round(amount * 100);
+
+    // Optional: Defensive check if you suspect the service isn't catching the missing key
+    // if (!this.configService.get('PAYSTACK_SECRET_KEY')) {
+    //   this.logger.error('PAYSTACK_SECRET_KEY is missing');
+    //   throw new InternalServerErrorException('Payment gateway not configured');
+    // }
 
     try {
       const data: any = await this.paystackService.initializeTransaction(
         user.email,
-        amountInKobo,
+        amount,
         callbackUrl,
       );
 
@@ -336,5 +342,15 @@ export class WalletsService {
       message: `Successfully transferred ${amount} to ${recipientEmail}`,
       reference,
     };
+  }
+
+  async deductTableFee(userId: string, amount: number, matchId: string): Promise<Wallet> {
+    const reference = `table_fee_${matchId}_${Date.now()}`;
+    return this.deductBalance(
+      userId,
+      amount,
+      TransactionType.TABLE_FEE,
+      reference,
+    );
   }
 }

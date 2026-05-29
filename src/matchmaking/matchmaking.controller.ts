@@ -14,7 +14,7 @@ export class MatchmakingController {
     return this.matchmakingService.recordMatch(recordMatchDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+
   @Get('leaderboard')
   async getLeaderboard(
     @Query('country') country?: string,

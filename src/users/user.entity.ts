@@ -109,6 +109,12 @@ export class User {
   @OneToMany(() => Transaction, (transaction) => transaction.user)
   transactions!: Transaction[];
 
+  @Column({ type: 'varchar', nullable: true })
+  resetToken?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetTokenExpiry?: Date | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

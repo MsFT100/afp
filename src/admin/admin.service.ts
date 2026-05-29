@@ -40,8 +40,10 @@ export class AdminService {
       where: { role: UserRole.PROMOTER },
     });
 
+    // Include both Players and Promoters in the total player count 
+    // if Promoters are allowed to play games.
     const playerCount = await this.userRepository.count({
-      where: { role: UserRole.PLAYER },
+      where: { role: In([UserRole.PLAYER, UserRole.PROMOTER]) },
     });
 
     return {
