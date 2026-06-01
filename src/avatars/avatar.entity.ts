@@ -1,11 +1,9 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
 
 export enum Rarity {
-  COMMON = 'common',
-  UNCOMMON = 'uncommon',
-  RARE = 'rare',
-  EPIC = 'epic',
-  LEGENDARY = 'legendary',
+  BASIC = 'basic',
+  PREMIUM = 'premium',
+  LEGEND = 'legend',
 }
 
 @Entity()
@@ -25,7 +23,7 @@ export class Avatar {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   price!: number;
 
-  @Column({ type: 'enum', enum: Rarity, default: Rarity.COMMON })
+  @Column({ type: 'enum', enum: Rarity, default: Rarity.BASIC })
   rarity!: Rarity;
 
   @Column({ default: false })
