@@ -27,8 +27,8 @@ export class WalletsController {
   }
 
   @Post('paystack/initialize')
-  async initializePaystack(@Req() req: any, @Body('amount') amount: number) {
-    return this.walletsService.initializePayment(req.user.id, amount);
+  async initializePaystack(@Req() req: any, @Body('amount') amount: number, @Body('currency') currency?: string) {
+    return this.walletsService.initializePayment(req.user.id, amount, currency);
   }
 
   /**

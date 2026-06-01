@@ -17,11 +17,23 @@ export class MatchmakingService {
     private playerRepository: Repository<User>,
   ) {}
 
-  async findAll(): Promise<Match[]> {
-    return this.matchRepository.find({
+  async getLatestMatchTimestamp(): Promise<string | null> {
+    const matches = await this.matchRepository.find({
+      order: { timestamp: 'DESC' },
+      select: ['timestamp'],
+      take: 1,
+    });
+    return matches.length > 0 ? matches[0].timestamp.toUTCString() : null;
+  }
+
+  async findAll(page: number = 1, limit: number = 20): Promise<{ data: Match[]; total: number; page: number; limit: number; totalPages: number }> {
+    const [data, total] = await this.matchRepository.findAndCount({
       relations: ['winner', 'loser'],
       order: { timestamp: 'DESC' },
+      take: limit,
+      skip: (page - 1) * limit,
     });
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getLeaderboard(

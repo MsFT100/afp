@@ -10,7 +10,10 @@ import {
   UseInterceptors,
   UploadedFile,
   Patch,
+  Headers,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { AvatarsService } from '../avatars/avatars.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -148,7 +151,30 @@ export class AdminController {
   }
 
   @Get('matches')
-  async listMatches() {
-    return this.matchmakingService.findAll();
+  async listMatches(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Headers('if-modified-since') ifModifiedSince?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    const latestTimestamp = await this.matchmakingService.getLatestMatchTimestamp();
+
+    if (latestTimestamp && ifModifiedSince) {
+      const ifModified = new Date(ifModifiedSince).getTime();
+      const latest = new Date(latestTimestamp).getTime();
+      if (latest <= ifModified) {
+        (res as Response).status(304).send();
+        return;
+      }
+    }
+
+    const result = await this.matchmakingService.findAll(parseInt(page, 10), parseInt(limit, 10));
+    (res as Response).set('Last-Modified', latestTimestamp || new Date().toUTCString());
+    return result;
+  }
+
+  @Get('exchange-rate')
+  async getExchangeRate(@Query('to') to: string = 'KES') {
+    return this.adminService.getExchangeRate(to);
   }
 }

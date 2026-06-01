@@ -6,6 +6,8 @@ import { Transaction, TransactionStatus, TransactionType } from '../transactions
 import { Avatar } from '../avatars/avatar.entity';
 import { WalletsService } from '../wallet/wallet.service';
 import { AuthService } from '../auth/auth.service';
+import { CurrencyPairsService } from '../currency/currency-pairs.service';
+import { CurrencyPair } from '../currency/currency-pair.entity';
 
 @Injectable()
 export class AdminService {
@@ -16,8 +18,11 @@ export class AdminService {
     private transactionRepository: Repository<Transaction>,
     @InjectRepository(Avatar)
     private avatarRepository: Repository<Avatar>,
-    private walletsService: WalletsService, // Inject WalletsService
+    @InjectRepository(CurrencyPair)
+    private currencyPairRepository: Repository<CurrencyPair>,
+    private walletsService: WalletsService,
     private authService: AuthService,
+    private currencyPairsService: CurrencyPairsService,
   ) {}
 
   async getGlobalStats() {
@@ -181,5 +186,30 @@ export class AdminService {
   async removeCoinsFromUser(userId: string, amount: number) {
     const reference = `manual_deduction_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     return this.walletsService.deductBalance(userId, amount, TransactionType.MANUAL_ADJUSTMENT, reference);
+  }
+
+  async getExchangeRate(targetCurrency: string): Promise<{ rate: number; from: string; to: string }> {
+    if (targetCurrency.toUpperCase() === 'USD') {
+      return { rate: 1, from: 'USD', to: 'USD' };
+    }
+
+    const pair = await this.currencyPairRepository.findOne({
+      where: { baseCurrency: 'USD', quoteCurrency: targetCurrency.toUpperCase() },
+    });
+
+    if (!pair) {
+      throw new NotFoundException(`Exchange rate not found for USD/${targetCurrency}`);
+    }
+
+    return { rate: Number(pair.rate), from: 'USD', to: targetCurrency.toUpperCase() };
+  }
+
+  async convertAmount(amountUsd: number, targetCurrency: string): Promise<{ amount: number; currency: string; rate: number }> {
+    if (targetCurrency.toUpperCase() === 'USD') {
+      return { amount: amountUsd, currency: 'USD', rate: 1 };
+    }
+
+    const { rate } = await this.getExchangeRate(targetCurrency);
+    return { amount: Math.round(amountUsd * rate * 100) / 100, currency: targetCurrency.toUpperCase(), rate };
   }
 }

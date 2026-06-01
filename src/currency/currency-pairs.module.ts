@@ -14,5 +14,6 @@ import { CurrencyPair } from './currency-pair.entity';
   ],
   providers: [CurrencyPairsService],
   controllers: [CurrencyPairsController],
+  exports: [CurrencyPairsService],
 })
 export class CurrencyPairsModule {}

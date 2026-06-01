@@ -146,7 +146,7 @@ export class WalletsService {
     );
   }
 
-  async initializePayment(userId: string, amount: number) {
+  async initializePayment(userId: string, amount: number, currency: string = 'NGN') {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -168,27 +168,17 @@ export class WalletsService {
 
     const callbackUrl = `${baseUrl}?transactionRef=${pendingTransaction.reference}`;
 
-    // Paystack expects amount in the smallest currency unit (e.g., Kobo)
-    //const amountInKobo = Math.round(amount * 100);
-
-    // Optional: Defensive check if you suspect the service isn't catching the missing key
-    // if (!this.configService.get('PAYSTACK_SECRET_KEY')) {
-    //   this.logger.error('PAYSTACK_SECRET_KEY is missing');
-    //   throw new InternalServerErrorException('Payment gateway not configured');
-    // }
-
     try {
       const data: any = await this.paystackService.initializeTransaction(
         user.email,
         amount,
         callbackUrl,
+        currency,
       );
 
       if (!data.status) {
         throw new Error(data.message || 'Paystack initialization failed');
       }
-
-      //console.log(`Paystack initialization successful for user ${userId}:`, data);
 
       return data.data; // Returns authorization_url and reference
     } catch (error: any) {

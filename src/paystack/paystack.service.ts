@@ -12,7 +12,8 @@ export class PaystackService {
     }
   }
 
-  async initializeTransaction(email: string, amount: number, callbackUrl: string): Promise<any> {
+  async initializeTransaction(email: string, amount: number, callbackUrl: string, currency: string = 'NGN'): Promise<any> {
+    const amountInSmallestUnit = currency === 'KES' ? Math.round(amount * 100) : amount * 100;
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -22,7 +23,8 @@ export class PaystackService {
       },
       body: JSON.stringify({
         email,
-        amount: amount * 100, // Paystack expects amount in kobo
+        amount: amountInSmallestUnit,
+        currency,
         callback_url: callbackUrl,
       }),
     });
