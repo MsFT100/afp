@@ -177,4 +177,12 @@ export class AdminController {
   async getExchangeRate(@Query('to') to: string = 'KES') {
     return this.adminService.getExchangeRate(to);
   }
+
+  @Post('users/:id/convert-to-promoter')
+  async convertToPromoter(
+    @Param('id') userId: string,
+    @Body('promoCode') promoCode?: string,
+  ) {
+    return this.adminService.convertToPromoter(userId, promoCode);
+  }
 }

@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Like } from 'typeorm';
+import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../users/user.entity';
 import { Transaction, TransactionStatus, TransactionType } from '../transactions/transaction.entity';
 import { Avatar } from '../avatars/avatar.entity';
@@ -211,5 +213,30 @@ export class AdminService {
 
     const { rate } = await this.getExchangeRate(targetCurrency);
     return { amount: Math.round(amountUsd * rate * 100) / 100, currency: targetCurrency.toUpperCase(), rate };
+  }
+
+  async convertToPromoter(userId: string, promoCode?: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.role === UserRole.PROMOTER) throw new ConflictException('User is already a promoter');
+
+    let code = promoCode;
+    if (!code) {
+      let attempts = 0;
+      while (attempts < 10) {
+        const candidate = 'PROMO-' + randomBytes(4).toString('hex').toUpperCase();
+        const existing = await this.userRepository.findOne({ where: { promoCode: candidate } });
+        if (!existing) { code = candidate; break; }
+        attempts++;
+      }
+      if (!code) throw new ConflictException('Unable to generate unique promo code');
+    } else {
+      const existing = await this.userRepository.findOne({ where: { promoCode: code } });
+      if (existing) throw new ConflictException('Promo code is already in use');
+    }
+
+    user.role = UserRole.PROMOTER;
+    user.promoCode = code;
+    return this.userRepository.save(user);
   }
 }
