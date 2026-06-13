@@ -91,4 +91,5 @@ export class UsersController {
   async updatePhone(@Request() req, @Body() updatePhoneDto: UpdatePhoneDto) {
     return this.usersService.updatePhone(req.user.id, updatePhoneDto.phoneNumber);
   }
+
 }

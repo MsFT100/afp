@@ -51,6 +51,8 @@ import { CurrencyPair } from './currency/currency-pair.entity';
           rejectUnauthorized: false,
         };
 
+        const isServerless = configService.get<string>('VERCEL_ENV') !== undefined;
+
         return {
           type: 'mysql',
           replication: {
@@ -72,6 +74,12 @@ import { CurrencyPair } from './currency/currency-pair.entity';
                 ssl,
               },
             ],
+          },
+          extra: {
+            connectionLimit: isServerless ? 2 : 10,
+            waitForConnections: true,
+            queueLimit: 0,
+            idleTimeout: 30000,
           },
           entities: [User, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair],
           synchronize: configService.get<string>('NODE_ENV') !== 'production',

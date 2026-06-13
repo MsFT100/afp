@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { WalletsService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TransactionType } from '../transactions/transaction.entity';
 
 @Controller('wallets')
 @UseGuards(JwtAuthGuard)
@@ -25,6 +26,13 @@ export class WalletsController {
   async addBalance(@Req() req: any, @Body('amount') amount: number) {
     return this.walletsService.addBalance(req.user.id, amount);
   }
+
+
+  @Post('deduct-balance')
+  async removeBalance(@Req() req: any, @Body('amount') amount: number) {
+    return this.walletsService.deductBalance(req.user.id, amount, TransactionType.MANUAL_ADJUSTMENT, "unknown");
+  }
+
 
   @Post('paystack/initialize')
   async initializePaystack(@Req() req: any, @Body('amount') amount: number, @Body('currency') currency?: string) {
