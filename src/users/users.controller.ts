@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   ParseUUIDPipe,
   UseGuards,
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { UpdatePhoneDto } from './update-phone.dto';
+import { FriendUserIdDto } from './friend.dto';
 
 @Controller('users')
 export class UsersController {
@@ -92,4 +94,27 @@ export class UsersController {
     return this.usersService.updatePhone(req.user.id, updatePhoneDto.phoneNumber);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('friends/add')
+  async addFriend(@Request() req, @Body() dto: FriendUserIdDto) {
+    return this.usersService.addFriend(req.user.id, dto.friendUserId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('friends/list')
+  async getFriends(@Request() req) {
+    return this.usersService.getFriends(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('friends/remove')
+  async removeFriend(@Request() req, @Body() dto: FriendUserIdDto) {
+    return this.usersService.removeFriend(req.user.id, dto.friendUserId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('friends/check/:friendUserId')
+  async checkFriend(@Request() req, @Param('friendUserId', ParseUUIDPipe) friendUserId: string) {
+    return this.usersService.checkFriend(req.user.id, friendUserId);
+  }
 }

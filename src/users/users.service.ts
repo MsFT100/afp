@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './user.entity';
+import { Friend, FriendStatus } from './friend.entity';
 import { WalletsService } from '../wallet/wallet.service';
 import { TransactionType } from '../transactions/transaction.entity';
 import { Avatar } from '../avatars/avatar.entity';
@@ -13,6 +14,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Friend)
+    private friendRepository: Repository<Friend>,
     @InjectRepository(Avatar)
     private avatarRepository: Repository<Avatar>,
     @InjectRepository(Cue)
@@ -205,5 +208,89 @@ export class UsersService {
 
   async updateLastLogin(userId: string): Promise<void> {
     await this.usersRepository.update(userId, { lastLoginAt: new Date() });
+  }
+
+  async addFriend(userId: string, friendUserId: string): Promise<{ success: boolean; friend: Friend }> {
+    if (userId === friendUserId) {
+      throw new BadRequestException('Cannot add yourself as a friend');
+    }
+
+    const friendUser = await this.usersRepository.findOne({ where: { id: friendUserId } });
+    if (!friendUser) {
+      throw new NotFoundException('User to add as friend not found');
+    }
+
+    const existing = await this.friendRepository.findOne({
+      where: [
+        { playerId: userId, friendId: friendUserId },
+        { playerId: friendUserId, friendId: userId },
+      ],
+    });
+    if (existing) {
+      throw new ConflictException('Friendship already exists');
+    }
+
+    const friend = this.friendRepository.create({
+      playerId: userId,
+      friendId: friendUserId,
+      status: FriendStatus.ACCEPTED,
+    });
+
+    await this.friendRepository.save(friend);
+    return { success: true, friend };
+  }
+
+  async getFriends(userId: string): Promise<{
+    userId: string;
+    displayName: string;
+    onlineStatus: string;
+  }[]> {
+    const friendships = await this.friendRepository.find({
+      where: [
+        { playerId: userId, status: FriendStatus.ACCEPTED },
+        { friendId: userId, status: FriendStatus.ACCEPTED },
+      ],
+      relations: ['player', 'friend'],
+    });
+
+    return friendships.map((f) => {
+      const friendUser = f.playerId === userId ? f.friend : f.player;
+      return {
+        userId: friendUser.id,
+        displayName: friendUser.displayName,
+        onlineStatus: 'offline',
+      };
+    });
+  }
+
+  async removeFriend(userId: string, friendUserId: string): Promise<{ success: boolean }> {
+    const friendship = await this.friendRepository.findOne({
+      where: [
+        { playerId: userId, friendId: friendUserId },
+        { playerId: friendUserId, friendId: userId },
+      ],
+    });
+
+    if (!friendship) {
+      throw new NotFoundException('Friendship not found');
+    }
+
+    await this.friendRepository.remove(friendship);
+    return { success: true };
+  }
+
+  async checkFriend(userId: string, friendUserId: string): Promise<{ isFriend: boolean }> {
+    if (userId === friendUserId) {
+      return { isFriend: false };
+    }
+
+    const existing = await this.friendRepository.findOne({
+      where: [
+        { playerId: userId, friendId: friendUserId, status: FriendStatus.ACCEPTED },
+        { playerId: friendUserId, friendId: userId, status: FriendStatus.ACCEPTED },
+      ],
+    });
+
+    return { isFriend: !!existing };
   }
 }

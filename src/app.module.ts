@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { User } from './users/user.entity';
+import { Friend } from './users/friend.entity';
 import { Wallet } from './wallet/wallet.entity';
 import { Transaction } from './transactions/transaction.entity';
 import { AuthModule } from './auth/auth.module';
@@ -81,13 +82,13 @@ import { CurrencyPair } from './currency/currency-pair.entity';
             queueLimit: 0,
             idleTimeout: 30000,
           },
-          entities: [User, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair],
+          entities: [User, Friend, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair],
           synchronize: configService.get<string>('NODE_ENV') !== 'production',
         };
       },
     }),
     // Feature entities should ideally be moved to their respective modules
-    TypeOrmModule.forFeature([User, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair]), 
+    TypeOrmModule.forFeature([User, Friend, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair]), 
     AuthModule,
     TransactionsModule,
     CloudinaryModule,
