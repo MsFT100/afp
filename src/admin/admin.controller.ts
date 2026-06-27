@@ -140,6 +140,14 @@ export class AdminController {
     return this.adminService.manualRegister(body);
   }
 
+  @Patch('users/:id')
+  async updatePlayer(
+    @Param('id') id: string,
+    @Body() body: { displayName?: string; email?: string; phoneNumber?: string },
+  ) {
+    return this.adminService.updateUser(id, body);
+  }
+
   @Post('users/:id/add-coins')
   async addCoins(@Param('id') id: string, @Body('amount') amount: number) {
     return this.adminService.addCoinsToUser(id, amount);

@@ -7,12 +7,14 @@ import { AuthService } from './auth.service';
 import { User } from '../users/user.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from '../mail/mail.module';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     PassportModule,
     MailModule,
+    WalletModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default-secret-key',
       signOptions: { expiresIn: '7d' },

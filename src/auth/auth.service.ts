@@ -11,6 +11,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../users/user.entity';
 import { MailService } from '../mail/mail.service';
+import { WalletsService } from '../wallet/wallet.service';
+
+const WELCOME_BONUS = 30;
 
 @Injectable()
 export class AuthService {
@@ -19,6 +22,7 @@ export class AuthService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private mailService: MailService,
+    private walletsService: WalletsService,
   ) {}
 
   async register(
@@ -28,6 +32,7 @@ export class AuthService {
     phoneNumber: string,
     role?: UserRole,
     promoCode?: string,
+    giveWelcomeBonus: boolean = true,
   ): Promise<User> {
     const normalizedEmail = email.toLowerCase();
     const existingUser = await this.userRepository.findOne({ where: { email: normalizedEmail } });
@@ -58,6 +63,10 @@ export class AuthService {
     const saved = await this.userRepository.save(userEntity);
 
     this.mailService.sendWelcomeEmail(saved.email, saved.displayName).catch(() => {});
+
+    if (giveWelcomeBonus) {
+      await this.walletsService.addBalance(saved.id, WELCOME_BONUS);
+    }
 
     return saved;
   }

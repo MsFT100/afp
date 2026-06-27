@@ -98,12 +98,38 @@ export class AdminService {
 
     const [data, total] = await this.userRepository.findAndCount({
       where: whereCondition,
-      order: { email: 'ASC' },
+      relations: ['wallet'],
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        phoneNumber: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+        countryCode: true,
+        region: true,
+        gamesPlayed: true,
+        gamesWon: true,
+        gamesLost: true,
+        promoCode: true,
+        deactivationReason: true,
+        wallet: true,
+      },
+      order: { lastLoginAt: { direction: 'DESC', nulls: 'LAST' } },
       take: limit,
       skip: (page - 1) * limit,
     });
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const mapped = data.map((user) => ({
+      ...user,
+      balance: user.wallet ? Number(user.wallet.balance) : 0,
+      wallet: undefined,
+    }));
+
+    return { data: mapped, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getPlayerDetailsWithBalance(userId: string) {
@@ -178,6 +204,7 @@ export class AdminService {
       registerData.phoneNumber,
       registerData.role || UserRole.PLAYER,
       registerData.promoCode,
+      false,
     );
   }
 
@@ -213,6 +240,17 @@ export class AdminService {
 
     const { rate } = await this.getExchangeRate(targetCurrency);
     return { amount: Math.round(amountUsd * rate * 100) / 100, currency: targetCurrency.toUpperCase(), rate };
+  }
+
+  async updateUser(userId: string, data: { displayName?: string; email?: string; phoneNumber?: string }): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (data.displayName !== undefined) user.displayName = data.displayName;
+    if (data.email !== undefined) user.email = data.email;
+    if (data.phoneNumber !== undefined) user.phoneNumber = data.phoneNumber;
+
+    return this.userRepository.save(user);
   }
 
   async convertToPromoter(userId: string, promoCode?: string): Promise<User> {
