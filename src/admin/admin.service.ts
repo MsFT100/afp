@@ -118,7 +118,7 @@ export class AdminService {
         deactivationReason: true,
         wallet: true,
       },
-      order: { lastLoginAt: { direction: 'DESC', nulls: 'LAST' } },
+      order: { lastLoginAt: 'DESC' },
       take: limit,
       skip: (page - 1) * limit,
     });
