@@ -5,6 +5,8 @@ import { Repository, In } from 'typeorm';
 import { Match } from './match.entity';
 import { User } from '../users/user.entity';
 import { RecordMatchDto } from './dto/record-match.dto';
+import { WalletsService } from '../wallet/wallet.service';
+import { TransactionType } from '../transactions/transaction.entity';
 
 @Injectable()
 export class MatchmakingService {
@@ -15,6 +17,7 @@ export class MatchmakingService {
     private matchRepository: Repository<Match>,
     @InjectRepository(User)
     private playerRepository: Repository<User>,
+    private walletsService: WalletsService,
   ) {}
 
   async getLatestMatchTimestamp(): Promise<string | null> {
@@ -139,6 +142,20 @@ export class MatchmakingService {
     }
 
     await Promise.all(updatePromises);
+
+    // Deduct entry fee from both players and credit winner's wallet
+    try {
+      const winnerId = dto.winnerId!;
+      const loserId = dto.loserId!;
+      await this.walletsService.deductBalance(winnerId, dto.entryCoins, TransactionType.TABLE_FEE, savedMatch.id);
+      if (loserId) {
+        await this.walletsService.deductBalance(loserId, dto.entryCoins, TransactionType.TABLE_FEE, savedMatch.id);
+      }
+      await this.walletsService.addBalance(winnerId, dto.winAmount);
+    } catch (err) {
+      this.logger.error('Wallet transaction failed for match ' + savedMatch.id, err);
+      throw err;
+    }
 
     // Update the objects in memory so the returned response reflects the new stats
     if (match.winner) {

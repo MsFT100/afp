@@ -183,6 +183,17 @@ export class UsersService {
     user.phoneNumber = phoneNumber;
     return this.usersRepository.save(user);
   }
+
+  async updateDisplayName(userId: string, displayName: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const reference = `rename_${userId}_${Date.now()}`;
+    await this.walletsService.deductBalance(userId, 100, TransactionType.PURCHASE, reference);
+
+    user.displayName = displayName;
+    return this.usersRepository.save(user);
+  }
   
   async updateGameStats(userId: string, isWinner: boolean): Promise<User> {
     // First, check if the user exists to throw NotFoundException if not

@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { UpdatePhoneDto } from './update-phone.dto';
+import { UpdateDisplayNameDto } from './update-display-name.dto';
 import { FriendUserIdDto } from './friend.dto';
 
 @Controller('users')
@@ -92,6 +93,12 @@ export class UsersController {
   @Patch('me/phone')
   async updatePhone(@Request() req, @Body() updatePhoneDto: UpdatePhoneDto) {
     return this.usersService.updatePhone(req.user.id, updatePhoneDto.phoneNumber);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/display-name')
+  async updateDisplayName(@Request() req, @Body() updateDisplayNameDto: UpdateDisplayNameDto) {
+    return this.usersService.updateDisplayName(req.user.id, updateDisplayNameDto.displayName);
   }
 
   @UseGuards(JwtAuthGuard)
