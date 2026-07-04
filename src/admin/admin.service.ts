@@ -253,6 +253,17 @@ export class AdminService {
     return this.userRepository.save(user);
   }
 
+  async updatePromoCode(userId: string, promoCode: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const existing = await this.userRepository.findOne({ where: { promoCode } });
+    if (existing && existing.id !== userId) throw new ConflictException('Promo code is already in use');
+
+    user.promoCode = promoCode;
+    return this.userRepository.save(user);
+  }
+
   async convertToPromoter(userId: string, promoCode?: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');

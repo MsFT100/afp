@@ -28,6 +28,7 @@ import { AdminService } from './admin.service';
 import { MatchmakingService } from '../matchmaking/matchmaking.service';
 import { CreatePromoterDto } from './dto/create-promoter.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdatePromoCodeDto } from './dto/update-promo-code.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -184,6 +185,14 @@ export class AdminController {
   @Get('exchange-rate')
   async getExchangeRate(@Query('to') to: string = 'KES') {
     return this.adminService.getExchangeRate(to);
+  }
+
+  @Patch('users/:id/promo-code')
+  async updatePromoCode(
+    @Param('id') userId: string,
+    @Body() body: UpdatePromoCodeDto,
+  ) {
+    return this.adminService.updatePromoCode(userId, body.promoCode);
   }
 
   @Post('users/:id/convert-to-promoter')

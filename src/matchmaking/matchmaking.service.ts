@@ -144,12 +144,13 @@ export class MatchmakingService {
     await Promise.all(updatePromises);
 
     // Deduct entry fee from both players and credit winner's wallet
+    // Use unique references to avoid unique constraint violation on transaction.reference
     try {
       const winnerId = dto.winnerId!;
       const loserId = dto.loserId!;
-      await this.walletsService.deductBalance(winnerId, dto.entryCoins, TransactionType.TABLE_FEE, savedMatch.id);
+      await this.walletsService.deductBalance(winnerId, dto.entryCoins, TransactionType.TABLE_FEE, `match_${savedMatch.id}_winner_deduct`);
       if (loserId) {
-        await this.walletsService.deductBalance(loserId, dto.entryCoins, TransactionType.TABLE_FEE, savedMatch.id);
+        await this.walletsService.deductBalance(loserId, dto.entryCoins, TransactionType.TABLE_FEE, `match_${savedMatch.id}_loser_deduct`);
       }
       await this.walletsService.addBalance(winnerId, dto.winAmount);
     } catch (err) {
