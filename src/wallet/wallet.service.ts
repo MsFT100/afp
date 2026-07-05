@@ -146,7 +146,14 @@ export class WalletsService {
     );
   }
 
+  private readonly supportedCurrencies = ['NGN', 'GHS', 'ZAR', 'USD', 'KES', 'EGP', 'XAF', 'XOF', 'RWF', 'TZS', 'UGX', 'MAD', 'ETB', 'SLL'];
+
   async initializePayment(userId: string, amount: number, currency: string = 'NGN') {
+    const normalizedCurrency = currency.toUpperCase();
+    if (!this.supportedCurrencies.includes(normalizedCurrency)) {
+      throw new BadRequestException(`Unsupported currency "${currency}". Supported currencies: ${this.supportedCurrencies.join(', ')}`);
+    }
+
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -173,7 +180,7 @@ export class WalletsService {
         user.email,
         amount,
         callbackUrl,
-        currency,
+        normalizedCurrency,
       );
 
       if (!data.status) {
