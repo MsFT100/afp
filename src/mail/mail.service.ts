@@ -5,12 +5,18 @@ import * as nodemailer from 'nodemailer';
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;
+  private readonly fromAddress: string;
 
   constructor(private configService: ConfigService) {
+    const smtpPort = Number(this.configService.get<string>('SMTP_PORT', '587'));
+    this.fromAddress = this.configService.get<string>(
+      'SMTP_FROM',
+      '"African Pool Pros" <no-reply@africanpoolpros.com>',
+    );
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('SMTP_HOST'),
-      port: this.configService.get<number>('SMTP_PORT', 587),
-      secure: this.configService.get<number>('SMTP_PORT', 587) === 465,
+      port: smtpPort,
+      secure: smtpPort === 465,
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
@@ -20,7 +26,7 @@ export class MailService {
 
   private async send(to: string, subject: string, html: string): Promise<void> {
     await this.transporter.sendMail({
-      from: `"African Pool Pros" <no-reply@africanpoolpros.com>`,
+      from: this.fromAddress,
       to,
       subject,
       html,

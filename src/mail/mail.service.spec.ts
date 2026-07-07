@@ -11,7 +11,7 @@ describe('MailService', () => {
     sendMailMock = jest.fn().mockResolvedValue(undefined);
 
     configService = {
-      get: jest.fn(),
+      get: jest.fn((key: string, defaultValue?: any) => defaultValue),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -101,31 +101,31 @@ describe('MailService', () => {
 
       const html = sendMailMock.mock.calls[0][0].html;
       expect(html).toContain('reset-token-xyz');
-      expect(html).toContain('/auth/reset-password?token=');
+      expect(html).toContain('/reset-password?token=');
     });
 
-    it('should use default BASE_URL of http://localhost:8000 when not configured', async () => {
+    it('should use default FRONTEND_URL of http://localhost:3000 when not configured', async () => {
       configService.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'BASE_URL') return defaultValue ?? undefined;
+        if (key === 'FRONTEND_URL') return defaultValue ?? undefined;
         return undefined;
       });
 
       await service.sendPasswordResetEmail('test@test.com', 'tok');
 
       const html = sendMailMock.mock.calls[0][0].html;
-      expect(html).toContain('http://localhost:8000/auth/reset-password?token=');
+      expect(html).toContain('http://localhost:3000/reset-password?token=');
     });
 
-    it('should use custom BASE_URL when configured', async () => {
+    it('should use custom FRONTEND_URL when configured', async () => {
       configService.get.mockImplementation((key: string) => {
-        if (key === 'BASE_URL') return 'https://africanpoolpros.com';
+        if (key === 'FRONTEND_URL') return 'https://africanpoolpros.com';
         return undefined;
       });
 
       await service.sendPasswordResetEmail('test@test.com', 'tok');
 
       const html = sendMailMock.mock.calls[0][0].html;
-      expect(html).toContain('https://africanpoolpros.com/auth/reset-password?token=');
+      expect(html).toContain('https://africanpoolpros.com/reset-password?token=');
     });
 
     it('should mention the 1-hour expiry in the body', async () => {
@@ -175,7 +175,11 @@ describe('MailService', () => {
   describe('SMTP configuration', () => {
     it('should read SMTP config values from ConfigService on construction', () => {
       expect(configService.get).toHaveBeenCalledWith('SMTP_HOST');
-      expect(configService.get).toHaveBeenCalledWith('SMTP_PORT', 587);
+      expect(configService.get).toHaveBeenCalledWith('SMTP_PORT', '587');
+      expect(configService.get).toHaveBeenCalledWith(
+        'SMTP_FROM',
+        '"African Pool Pros" <no-reply@africanpoolpros.com>',
+      );
       expect(configService.get).toHaveBeenCalledWith('SMTP_USER');
       expect(configService.get).toHaveBeenCalledWith('SMTP_PASS');
     });

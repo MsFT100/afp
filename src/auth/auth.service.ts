@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
@@ -17,6 +18,8 @@ const WELCOME_BONUS = 30;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -62,7 +65,9 @@ export class AuthService {
 
     const saved = await this.userRepository.save(userEntity);
 
-    this.mailService.sendWelcomeEmail(saved.email, saved.displayName).catch(() => {});
+    this.mailService.sendWelcomeEmail(saved.email, saved.displayName).catch((error) => {
+      this.logger.error(`Failed to send welcome email to ${saved.email}`, error);
+    });
 
     if (giveWelcomeBonus) {
       await this.walletsService.addBalance(saved.id, WELCOME_BONUS);
@@ -115,7 +120,9 @@ export class AuthService {
 
     await this.userRepository.update(user.id, { resetToken: token, resetTokenExpiry: expiry });
 
-    this.mailService.sendPasswordResetEmail(user.email, token).catch(() => {});
+    this.mailService.sendPasswordResetEmail(user.email, token).catch((error) => {
+      this.logger.error(`Failed to send password reset email to ${user.email}`, error);
+    });
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
