@@ -68,7 +68,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
-    const resetUrl = `${this.configService.get<string>('BASE_URL', 'http://localhost:8000')}/auth/reset-password?token=${token}`;
+    const resetUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')}/reset-password?token=${token}`;
     await this.send(
       to,
       'Reset Your Password - African Pool Pros',
