@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { WalletsService } from '../wallet/wallet.service';
 import { ConfigService } from '@nestjs/config';
+import { TransactionType } from '../transactions/transaction.entity';
 import * as crypto from 'crypto';
 
 @Controller('payment')
@@ -43,7 +44,7 @@ export class PaystackWebhookController {
     }
 
     if (body.event === 'charge.success') {
-      const { reference, amount } = body.data;
+      const { reference, amount, currency } = body.data;
       
       // Find the pending transaction to get the user ID
       const transaction = await this.walletsService.transactionsService.transactionsRepository.findOne({
@@ -53,7 +54,7 @@ export class PaystackWebhookController {
 
       if (transaction && transaction.user) {
         const amountInMainUnit = amount / 100; // Paystack sends amount in Kobo
-        await this.walletsService.creditUserWalletFromWebhook(transaction.user.id, amountInMainUnit, reference);
+        await this.walletsService.creditUserWalletFromWebhook(transaction.user.id, amountInMainUnit, reference, TransactionType.DEPOSIT, currency);
         this.logger.log(`Successfully processed webhook for reference: ${reference}`);
       }
     }

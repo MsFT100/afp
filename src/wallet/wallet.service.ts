@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Wallet } from './wallet.entity';
 import { User } from '../users/user.entity';
+import { CurrencyPair } from '../currency/currency-pair.entity';
 import { ConfigService } from '@nestjs/config';
 import {
   TransactionStatus,
@@ -22,15 +23,19 @@ import { PayPalService } from '../paypal/paypal.service';
 export class WalletsService {
   private readonly logger = new Logger(WalletsService.name);
 
+  private readonly COIN_PRICE_USD = 0.01;
+
   constructor(
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private payPalService: PayPalService, // Inject PayPalService
-    private paystackService: PaystackService, // Inject PaystackService
+    @InjectRepository(CurrencyPair)
+    private currencyPairRepository: Repository<CurrencyPair>,
+    private payPalService: PayPalService,
+    private paystackService: PaystackService,
     private configService: ConfigService,
-    public transactionsService: TransactionsService, // Inject the new service
+    public transactionsService: TransactionsService,
   ) {}
 
   async getOrCreateWallet(userId: string): Promise<Wallet> {
@@ -143,6 +148,7 @@ export class WalletsService {
       amountReceived,
       orderId,
       TransactionType.PAYPAL_DEPOSIT,
+      'USD',
     );
   }
 
@@ -201,12 +207,29 @@ export class WalletsService {
     }
   }
 
-  // New method for processing webhooks
+  private async convertToCoins(amount: number, currency: string): Promise<number> {
+    const normalized = currency.toUpperCase();
+    if (normalized === 'USD') {
+      return Math.round(amount / this.COIN_PRICE_USD);
+    }
+    const pair = await this.currencyPairRepository.findOne({
+      where: { baseCurrency: 'USD', quoteCurrency: normalized },
+    });
+    if (!pair) {
+      this.logger.warn(`No exchange rate found for USD/${normalized}, crediting raw amount as coins`);
+      return Math.round(amount);
+    }
+    const rate = Number(pair.rate);
+    const usdAmount = amount / rate;
+    return Math.round(usdAmount / this.COIN_PRICE_USD);
+  }
+
   async creditUserWalletFromWebhook(
     userId: string,
     amount: number,
     reference: string,
     type: TransactionType = TransactionType.DEPOSIT,
+    currency: string = 'USD',
   ): Promise<Wallet> {
     const wallet = await this.getOrCreateWallet(userId);
 
@@ -216,21 +239,23 @@ export class WalletsService {
     });
 
     if (existingTransaction) {
-      // Transaction already processed, no need to update balance again
       this.transactionsService.updateTransactionStatus(reference, TransactionStatus.SUCCESS, amount);
       return wallet;
     }
 
-    // Update wallet balance
-    wallet.balance = Number(wallet.balance) + amount;
+    // Convert from local currency to coins
+    const coinAmount = await this.convertToCoins(amount, currency);
+
+    // Update wallet balance with coin amount
+    wallet.balance = Number(wallet.balance) + coinAmount;
     const updatedWallet = await this.walletRepository.save(wallet);
 
-    // Update or create transaction record
-    await this.transactionsService.updateTransactionStatus(reference, TransactionStatus.SUCCESS, amount)
-      .catch(async () => { // If updateTransactionStatus throws because no pending transaction found, create one
+    // Update or create transaction record with coin amount
+    await this.transactionsService.updateTransactionStatus(reference, TransactionStatus.SUCCESS, coinAmount)
+      .catch(async () => {
         await this.transactionsService.createTransaction(
           wallet.user,
-          amount,
+          coinAmount,
           reference,
           TransactionStatus.SUCCESS,
           type,
@@ -251,12 +276,14 @@ export class WalletsService {
     }
 
     const amountReceived = data.data.amount / 100;
+    const currency = data.data.currency;
 
     return this.creditUserWalletFromWebhook(
       userId,
       amountReceived,
       reference,
       TransactionType.DEPOSIT,
+      currency,
     );
   }
 

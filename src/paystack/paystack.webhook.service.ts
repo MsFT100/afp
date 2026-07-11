@@ -12,7 +12,7 @@ import * as crypto from 'crypto';
 import { PaystackService } from './paystack.service';
 import { WalletsService } from '../wallet/wallet.service';
 import { User } from '../users/user.entity';
-import { TransactionStatus } from '../transactions/transaction.entity';
+import { TransactionStatus, TransactionType } from '../transactions/transaction.entity';
 import { TransactionsService } from '../transactions/transactions.service';
 
 @Injectable()
@@ -69,6 +69,7 @@ export class PaystackWebhookService {
     }
 
     const amount = verificationResult.data.amount / 100; // Convert kobo to main unit
+    const currency = verificationResult.data.currency;
     const userEmail = verificationResult.data.customer.email;
 
     // Find user by email and update their wallet
@@ -81,7 +82,7 @@ export class PaystackWebhookService {
       throw new NotFoundException('User not found for this transaction.');
     }
 
-    await this.walletsService.creditUserWalletFromWebhook(user.id, amount, reference);
+    await this.walletsService.creditUserWalletFromWebhook(user.id, amount, reference, TransactionType.DEPOSIT, currency);
     this.logger.log(`Successfully processed Paystack webhook for user ${user.id}, amount ${amount}, reference ${reference}`);
   }
 }
