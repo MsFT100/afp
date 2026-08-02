@@ -125,11 +125,17 @@ export class CurrencyPairsService {
 
       this.logger.log('Exchange rates updated successfully.');
     } catch (error: any) {
-      this.logger.error('Error updating exchange rates:', error?.message || error);
+      this.logger.error(
+        'Error updating exchange rates:',
+        error?.message || error,
+      );
     }
   }
 
-  async getCurrencyPairs(base?: string, quote?: string): Promise<CurrencyPair[]> {
+  async getCurrencyPairs(
+    base?: string,
+    quote?: string,
+  ): Promise<CurrencyPair[]> {
     const query: any = {};
     if (base) query.baseCurrency = base.toUpperCase();
     if (quote) query.quoteCurrency = quote.toUpperCase();

@@ -1,7 +1,11 @@
 import 'multer';
 import { Readable } from 'stream';
 import { Injectable } from '@nestjs/common';
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -20,16 +24,19 @@ export class CloudinaryService {
     width: number = 800,
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {
-      const upload = cloudinary.uploader.upload_stream({
-        folder: `afp/${folder}`,
-        transformation: [
-          { width, crop: 'scale', quality: 'auto', fetch_format: 'auto' }
-        ]
-      }, (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('Cloudinary upload failed'));
-        resolve(result);
-      });
+      const upload = cloudinary.uploader.upload_stream(
+        {
+          folder: `afp/${folder}`,
+          transformation: [
+            { width, crop: 'scale', quality: 'auto', fetch_format: 'auto' },
+          ],
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          if (!result) return reject(new Error('Cloudinary upload failed'));
+          resolve(result);
+        },
+      );
 
       Readable.from(file.buffer).pipe(upload);
     });

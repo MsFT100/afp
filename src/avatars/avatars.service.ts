@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Avatar, Rarity } from './avatar.entity';
@@ -18,8 +22,20 @@ export class AvatarsService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
-  async create(name: string, imageUrl: string, publicId: string, price: number, rarity: Rarity): Promise<Avatar> {
-    const avatar = this.avatarRepository.create({ name, imageUrl, publicId, price, rarity });
+  async create(
+    name: string,
+    imageUrl: string,
+    publicId: string,
+    price: number,
+    rarity: Rarity,
+  ): Promise<Avatar> {
+    const avatar = this.avatarRepository.create({
+      name,
+      imageUrl,
+      publicId,
+      price,
+      rarity,
+    });
     return this.avatarRepository.save(avatar);
   }
 
@@ -60,10 +76,14 @@ export class AvatarsService {
 
   async purchase(userId: string, avatarId: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    const avatar = await this.avatarRepository.findOne({ where: { id: avatarId } });
+    const avatar = await this.avatarRepository.findOne({
+      where: { id: avatarId },
+    });
 
-    if (!user || !avatar) throw new NotFoundException('User or Avatar not found');
-    if (!avatar.isPublished) throw new BadRequestException('Avatar is not available for purchase');
+    if (!user || !avatar)
+      throw new NotFoundException('User or Avatar not found');
+    if (!avatar.isPublished)
+      throw new BadRequestException('Avatar is not available for purchase');
 
     const avatarRef = `'${avatar.id}'`;
     if (user.ownedAvatars.includes(avatarRef)) {
@@ -78,7 +98,9 @@ export class AvatarsService {
       reference,
     );
 
-    user.ownedAvatars = user.ownedAvatars ? `${user.ownedAvatars};${avatarRef}` : avatarRef;
+    user.ownedAvatars = user.ownedAvatars
+      ? `${user.ownedAvatars};${avatarRef}`
+      : avatarRef;
     return this.userRepository.save(user);
   }
 }

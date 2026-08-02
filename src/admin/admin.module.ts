@@ -17,7 +17,6 @@ import { PaystackModule } from '../paystack/paystack.module';
 import { MatchmakingModule } from '../matchmaking/matchmaking.module';
 import { CurrencyPairsModule } from '../currency/currency-pairs.module';
 
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Transaction, Avatar, Wallet, CurrencyPair]),
@@ -29,6 +28,11 @@ import { CurrencyPairsModule } from '../currency/currency-pairs.module';
     CurrencyPairsModule,
   ],
   controllers: [AdminController],
-  providers: [AdminService, AvatarsService, WalletsService, TransactionsService],
+  providers: [
+    AdminService,
+    AvatarsService,
+    WalletsService,
+    TransactionsService,
+  ],
 })
 export class AdminModule {}

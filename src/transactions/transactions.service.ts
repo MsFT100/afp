@@ -40,10 +40,18 @@ export class TransactionsService {
     });
   }
 
-  async updateTransactionStatus(reference: string, status: TransactionStatus, amount?: number): Promise<Transaction> {
-    const transaction = await this.transactionsRepository.findOne({ where: { reference } });
+  async updateTransactionStatus(
+    reference: string,
+    status: TransactionStatus,
+    amount?: number,
+  ): Promise<Transaction> {
+    const transaction = await this.transactionsRepository.findOne({
+      where: { reference },
+    });
     if (!transaction) {
-      throw new NotFoundException(`Transaction with reference ${reference} not found`);
+      throw new NotFoundException(
+        `Transaction with reference ${reference} not found`,
+      );
     }
     transaction.status = status;
     if (amount !== undefined) {

@@ -1,10 +1,18 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Like } from 'typeorm';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../users/user.entity';
-import { Transaction, TransactionStatus, TransactionType } from '../transactions/transaction.entity';
+import {
+  Transaction,
+  TransactionStatus,
+  TransactionType,
+} from '../transactions/transaction.entity';
 import { Avatar } from '../avatars/avatar.entity';
 import { WalletsService } from '../wallet/wallet.service';
 import { AuthService } from '../auth/auth.service';
@@ -47,7 +55,7 @@ export class AdminService {
       where: { role: UserRole.PROMOTER },
     });
 
-    // Include both Players and Promoters in the total player count 
+    // Include both Players and Promoters in the total player count
     // if Promoters are allowed to play games.
     const playerCount = await this.userRepository.count({
       where: { role: In([UserRole.PLAYER, UserRole.PROMOTER]) },
@@ -64,14 +72,16 @@ export class AdminService {
 
   async getPeriodicStats(period: 'day' | 'month') {
     const format = period === 'day' ? '%Y-%m-%d' : '%Y-%m';
-    
+
     // Note: This uses MySQL specific DATE_FORMAT
     return this.transactionRepository
       .createQueryBuilder('transaction')
       .select(`DATE_FORMAT(transaction.createdAt, '${format}')`, 'date')
       .addSelect('COUNT(transaction.id)', 'count')
       .addSelect('SUM(transaction.amount)', 'totalAmount')
-      .where('transaction.status = :status', { status: TransactionStatus.SUCCESS })
+      .where('transaction.status = :status', {
+        status: TransactionStatus.SUCCESS,
+      })
       .groupBy('date')
       .orderBy('date', 'DESC')
       .getRawMany();
@@ -129,7 +139,13 @@ export class AdminService {
       wallet: undefined,
     }));
 
-    return { data: mapped, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data: mapped,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getPlayerDetailsWithBalance(userId: string) {
@@ -173,7 +189,11 @@ export class AdminService {
     };
   }
 
-  async listAllTransactions(page: number = 1, limit: number = 20, userId?: string) {
+  async listAllTransactions(
+    page: number = 1,
+    limit: number = 20,
+    userId?: string,
+  ) {
     const where = userId ? { user: { id: userId } } : {};
     const [data, total] = await this.transactionRepository.findAndCount({
       where,
@@ -189,10 +209,10 @@ export class AdminService {
   async toggleUserStatus(userId: string, isActive: boolean, reason?: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    
+
     user.isActive = isActive;
     user.deactivationReason = isActive ? null : reason; // Clear reason if reactivating
-    
+
     return this.userRepository.save(user);
   }
 
@@ -214,35 +234,61 @@ export class AdminService {
 
   async removeCoinsFromUser(userId: string, amount: number) {
     const reference = `manual_deduction_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    return this.walletsService.deductBalance(userId, amount, TransactionType.MANUAL_ADJUSTMENT, reference);
+    return this.walletsService.deductBalance(
+      userId,
+      amount,
+      TransactionType.MANUAL_ADJUSTMENT,
+      reference,
+    );
   }
 
-  async getExchangeRate(targetCurrency: string): Promise<{ rate: number; from: string; to: string }> {
+  async getExchangeRate(
+    targetCurrency: string,
+  ): Promise<{ rate: number; from: string; to: string }> {
     if (targetCurrency.toUpperCase() === 'USD') {
       return { rate: 1, from: 'USD', to: 'USD' };
     }
 
     const pair = await this.currencyPairRepository.findOne({
-      where: { baseCurrency: 'USD', quoteCurrency: targetCurrency.toUpperCase() },
+      where: {
+        baseCurrency: 'USD',
+        quoteCurrency: targetCurrency.toUpperCase(),
+      },
     });
 
     if (!pair) {
-      throw new NotFoundException(`Exchange rate not found for USD/${targetCurrency}`);
+      throw new NotFoundException(
+        `Exchange rate not found for USD/${targetCurrency}`,
+      );
     }
 
-    return { rate: Number(pair.rate), from: 'USD', to: targetCurrency.toUpperCase() };
+    return {
+      rate: Number(pair.rate),
+      from: 'USD',
+      to: targetCurrency.toUpperCase(),
+    };
   }
 
-  async convertAmount(amountUsd: number, targetCurrency: string): Promise<{ amount: number; currency: string; rate: number }> {
+  async convertAmount(
+    amountUsd: number,
+    targetCurrency: string,
+  ): Promise<{ amount: number; currency: string; rate: number }> {
     if (targetCurrency.toUpperCase() === 'USD') {
       return { amount: amountUsd, currency: 'USD', rate: 1 };
     }
 
     const { rate } = await this.getExchangeRate(targetCurrency);
-    return { amount: Math.round(amountUsd * rate * 100) / 100, currency: targetCurrency.toUpperCase(), rate };
+    return {
+      amount: Math.round(amountUsd * rate * 100) / 100,
+      currency: targetCurrency.toUpperCase(),
+      rate,
+    };
   }
 
-  async updateUser(userId: string, data: { displayName?: string; email?: string; phoneNumber?: string }): Promise<User> {
+  async updateUser(
+    userId: string,
+    data: { displayName?: string; email?: string; phoneNumber?: string },
+  ): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -257,8 +303,11 @@ export class AdminService {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const existing = await this.userRepository.findOne({ where: { promoCode } });
-    if (existing && existing.id !== userId) throw new ConflictException('Promo code is already in use');
+    const existing = await this.userRepository.findOne({
+      where: { promoCode },
+    });
+    if (existing && existing.id !== userId)
+      throw new ConflictException('Promo code is already in use');
 
     user.promoCode = promoCode;
     return this.userRepository.save(user);
@@ -267,20 +316,30 @@ export class AdminService {
   async convertToPromoter(userId: string, promoCode?: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    if (user.role === UserRole.PROMOTER) throw new ConflictException('User is already a promoter');
+    if (user.role === UserRole.PROMOTER)
+      throw new ConflictException('User is already a promoter');
 
     let code = promoCode;
     if (!code) {
       let attempts = 0;
       while (attempts < 10) {
-        const candidate = 'PROMO-' + randomBytes(4).toString('hex').toUpperCase();
-        const existing = await this.userRepository.findOne({ where: { promoCode: candidate } });
-        if (!existing) { code = candidate; break; }
+        const candidate =
+          'PROMO-' + randomBytes(4).toString('hex').toUpperCase();
+        const existing = await this.userRepository.findOne({
+          where: { promoCode: candidate },
+        });
+        if (!existing) {
+          code = candidate;
+          break;
+        }
         attempts++;
       }
-      if (!code) throw new ConflictException('Unable to generate unique promo code');
+      if (!code)
+        throw new ConflictException('Unable to generate unique promo code');
     } else {
-      const existing = await this.userRepository.findOne({ where: { promoCode: code } });
+      const existing = await this.userRepository.findOne({
+        where: { promoCode: code },
+      });
       if (existing) throw new ConflictException('Promo code is already in use');
     }
 

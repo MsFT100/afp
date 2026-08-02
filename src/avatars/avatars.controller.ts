@@ -1,5 +1,16 @@
 import 'multer';
-import { Controller, Post, Get, Body, UseGuards, Req, UseInterceptors, UploadedFile, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Req,
+  UseInterceptors,
+  UploadedFile,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AvatarsService } from './avatars.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -27,7 +38,13 @@ export class AvatarsController {
     @Body('rarity') rarity: Rarity,
   ) {
     const upload = await this.cloudinaryService.uploadImage(file, 'avatars'); // upload.public_id will be available here
-    const avatar = await this.avatarsService.create(name, upload.secure_url, upload.public_id, price, rarity);
+    const avatar = await this.avatarsService.create(
+      name,
+      upload.secure_url,
+      upload.public_id,
+      price,
+      rarity,
+    );
     return this.avatarsService.publish(avatar.id);
   }
 

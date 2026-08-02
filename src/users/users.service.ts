@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './user.entity';
@@ -7,7 +12,6 @@ import { WalletsService } from '../wallet/wallet.service';
 import { TransactionType } from '../transactions/transaction.entity';
 import { Avatar } from '../avatars/avatar.entity';
 import { Cue } from '../cues/cue.entity';
-
 
 @Injectable()
 export class UsersService {
@@ -71,7 +75,13 @@ export class UsersService {
     });
   }
 
-  async setUsedCue(userId: string, index: number, power: number, aim: number, time: number) {
+  async setUsedCue(
+    userId: string,
+    index: number,
+    power: number,
+    aim: number,
+    time: number,
+  ) {
     const usedCueString = `'${index}';'${power}';'${aim}';'${time}'`;
     await this.usersRepository.update(userId, { usedCue: usedCueString });
     return { success: true, usedCue: usedCueString };
@@ -92,7 +102,9 @@ export class UsersService {
     }
 
     // Fetch the full Avatar object to ensure it exists and to return it
-    const avatarToSet = await this.avatarRepository.findOne({ where: { id: avatarId } });
+    const avatarToSet = await this.avatarRepository.findOne({
+      where: { id: avatarId },
+    });
     if (!avatarToSet) {
       throw new NotFoundException('Avatar not found in the database');
     }
@@ -130,7 +142,12 @@ export class UsersService {
     }
 
     const reference = `buy_cue_${index}_${Date.now()}`;
-    await this.walletsService.deductBalance(userId, cost, TransactionType.PURCHASE, reference);
+    await this.walletsService.deductBalance(
+      userId,
+      cost,
+      TransactionType.PURCHASE,
+      reference,
+    );
 
     // Mimicking PlayFab logic: appending to the semicolon-separated string
     const updatedCues = user.ownedCues ? `${user.ownedCues};${cueRef}` : cueRef;
@@ -148,9 +165,16 @@ export class UsersService {
     }
 
     const reference = `buy_chat_${index}_${Date.now()}`;
-    await this.walletsService.deductBalance(userId, cost, TransactionType.PURCHASE, reference);
+    await this.walletsService.deductBalance(
+      userId,
+      cost,
+      TransactionType.PURCHASE,
+      reference,
+    );
 
-    const updatedChats = user.ownedChats ? `${user.ownedChats};${chatRef}` : chatRef;
+    const updatedChats = user.ownedChats
+      ? `${user.ownedChats};${chatRef}`
+      : chatRef;
     await this.usersRepository.update(userId, { ownedChats: updatedChats });
     return { success: true, ownedChats: updatedChats };
   }
@@ -169,7 +193,15 @@ export class UsersService {
     // We explicitly select fields to avoid returning sensitive data like the password hash
     return this.usersRepository.find({
       where: { referredBy: { id: promoterId } },
-      select: ['id', 'email', 'displayName', 'role', 'isActive', 'promoCode', 'lastLoginAt'],
+      select: [
+        'id',
+        'email',
+        'displayName',
+        'role',
+        'isActive',
+        'promoCode',
+        'lastLoginAt',
+      ],
     });
   }
 
@@ -189,15 +221,22 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
 
     const reference = `rename_${userId}_${Date.now()}`;
-    await this.walletsService.deductBalance(userId, 100, TransactionType.PURCHASE, reference);
+    await this.walletsService.deductBalance(
+      userId,
+      100,
+      TransactionType.PURCHASE,
+      reference,
+    );
 
     user.displayName = displayName;
     return this.usersRepository.save(user);
   }
-  
+
   async updateGameStats(userId: string, isWinner: boolean): Promise<User> {
     // First, check if the user exists to throw NotFoundException if not
-    const userExists = await this.usersRepository.count({ where: { id: userId } });
+    const userExists = await this.usersRepository.count({
+      where: { id: userId },
+    });
     if (userExists === 0) {
       throw new NotFoundException('User not found');
     }
@@ -210,7 +249,7 @@ export class UsersService {
     } else {
       await this.usersRepository.increment({ id: userId }, 'gamesLost', 1);
     }
-    
+
     // Fetch the updated user to return the latest stats
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -221,12 +260,17 @@ export class UsersService {
     await this.usersRepository.update(userId, { lastLoginAt: new Date() });
   }
 
-  async addFriend(userId: string, friendUserId: string): Promise<{ success: boolean; friend: Friend }> {
+  async addFriend(
+    userId: string,
+    friendUserId: string,
+  ): Promise<{ success: boolean; friend: Friend }> {
     if (userId === friendUserId) {
       throw new BadRequestException('Cannot add yourself as a friend');
     }
 
-    const friendUser = await this.usersRepository.findOne({ where: { id: friendUserId } });
+    const friendUser = await this.usersRepository.findOne({
+      where: { id: friendUserId },
+    });
     if (!friendUser) {
       throw new NotFoundException('User to add as friend not found');
     }
@@ -251,11 +295,13 @@ export class UsersService {
     return { success: true, friend };
   }
 
-  async getFriends(userId: string): Promise<{
-    userId: string;
-    displayName: string;
-    onlineStatus: string;
-  }[]> {
+  async getFriends(userId: string): Promise<
+    {
+      userId: string;
+      displayName: string;
+      onlineStatus: string;
+    }[]
+  > {
     const friendships = await this.friendRepository.find({
       where: [
         { playerId: userId, status: FriendStatus.ACCEPTED },
@@ -274,7 +320,10 @@ export class UsersService {
     });
   }
 
-  async removeFriend(userId: string, friendUserId: string): Promise<{ success: boolean }> {
+  async removeFriend(
+    userId: string,
+    friendUserId: string,
+  ): Promise<{ success: boolean }> {
     const friendship = await this.friendRepository.findOne({
       where: [
         { playerId: userId, friendId: friendUserId },
@@ -290,15 +339,26 @@ export class UsersService {
     return { success: true };
   }
 
-  async checkFriend(userId: string, friendUserId: string): Promise<{ isFriend: boolean }> {
+  async checkFriend(
+    userId: string,
+    friendUserId: string,
+  ): Promise<{ isFriend: boolean }> {
     if (userId === friendUserId) {
       return { isFriend: false };
     }
 
     const existing = await this.friendRepository.findOne({
       where: [
-        { playerId: userId, friendId: friendUserId, status: FriendStatus.ACCEPTED },
-        { playerId: friendUserId, friendId: userId, status: FriendStatus.ACCEPTED },
+        {
+          playerId: userId,
+          friendId: friendUserId,
+          status: FriendStatus.ACCEPTED,
+        },
+        {
+          playerId: friendUserId,
+          friendId: userId,
+          status: FriendStatus.ACCEPTED,
+        },
       ],
     });
 

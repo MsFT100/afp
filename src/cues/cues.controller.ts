@@ -1,5 +1,16 @@
 import 'multer';
-import { Controller, Post, Get, Body, UseGuards, Req, UseInterceptors, UploadedFile, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Req,
+  UseInterceptors,
+  UploadedFile,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CuesService } from './cues.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -8,7 +19,6 @@ import { Roles } from '../auth/roles.decorator';
 import { Cue, Rarity } from './cue.entity';
 import { UserRole } from '../users/user.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-
 
 @Controller('cues')
 export class CuesController {
@@ -29,9 +39,19 @@ export class CuesController {
     @Body('aim') aim: number,
     @Body('time') time: number,
     @Body('rarity') rarity: Rarity,
-  ) { // upload.public_id will be available here
-    const upload = await this.cloudinaryService.uploadImage(file, 'cues'); 
-    const cue = await this.cuesService.create(name, upload.secure_url, upload.public_id, price, Number(power), Number(aim), Number(time), rarity);
+  ) {
+    // upload.public_id will be available here
+    const upload = await this.cloudinaryService.uploadImage(file, 'cues');
+    const cue = await this.cuesService.create(
+      name,
+      upload.secure_url,
+      upload.public_id,
+      price,
+      Number(power),
+      Number(aim),
+      Number(time),
+      rarity,
+    );
     return this.cuesService.publish(cue.id);
   }
 

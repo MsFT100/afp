@@ -29,14 +29,19 @@ export class PayPalWebhookService {
 
     // Handle successful capture
     if (body.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-      const orderId = body.resource.supplementary_data?.related_ids?.order_id || body.resource.parent_payment;
+      const orderId =
+        body.resource.supplementary_data?.related_ids?.order_id ||
+        body.resource.parent_payment;
       const amount = parseFloat(body.resource.amount.value);
-      
+
       // Find the transaction by reference (orderId)
-      const transaction = await this.walletsService.transactionsService.transactionsRepository.findOne({
-        where: { reference: orderId },
-        relations: ['user'],
-      });
+      const transaction =
+        await this.walletsService.transactionsService.transactionsRepository.findOne(
+          {
+            where: { reference: orderId },
+            relations: ['user'],
+          },
+        );
 
       if (transaction && transaction.user) {
         await this.walletsService.creditUserWalletFromWebhook(
@@ -49,10 +54,13 @@ export class PayPalWebhookService {
     }
   }
 
-  private async verifySignature(headers: Record<string, string>, body: any): Promise<boolean> {
+  private async verifySignature(
+    headers: Record<string, string>,
+    body: any,
+  ): Promise<boolean> {
     const webhookId = this.configService.get<string>('PAYPAL_WEBHOOK_ID');
     const accessToken = await this.paypalService.generateAccessToken();
-    
+
     const verificationBody = {
       auth_algo: headers['paypal-auth-algo'],
       cert_url: headers['paypal-cert-url'],
@@ -64,19 +72,28 @@ export class PayPalWebhookService {
     };
 
     try {
-      const endpoint = this.configService.get<string>('NODE_ENV') === 'production'
-        ? 'https://api-m.paypal.com'
-        : 'https://api-m.sandbox.paypal.com';
+      const endpoint =
+        this.configService.get<string>('NODE_ENV') === 'production'
+          ? 'https://api-m.paypal.com'
+          : 'https://api-m.sandbox.paypal.com';
 
       const response = await firstValueFrom(
-        this.httpService.post(`${endpoint}/v1/notifications/verify-webhook-signature`, verificationBody, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        })
+        this.httpService.post(
+          `${endpoint}/v1/notifications/verify-webhook-signature`,
+          verificationBody,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        ),
       );
       return response.data.verification_status === 'SUCCESS';
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error('Error verifying PayPal webhook', error.message, error.stack);
+        this.logger.error(
+          'Error verifying PayPal webhook',
+          error.message,
+          error.stack,
+        );
       } else {
         this.logger.error('Unknown error verifying PayPal webhook', error);
       }

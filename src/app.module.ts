@@ -29,7 +29,6 @@ import { MatchmakingModule } from './matchmaking/matchmaking.module';
 import { CurrencyPairsModule } from './currency/currency-pairs.module';
 import { CurrencyPair } from './currency/currency-pair.entity';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -42,17 +41,21 @@ import { CurrencyPair } from './currency/currency-pair.entity';
       useFactory: async (configService: ConfigService) => {
         const username = configService.get<string>('MYSQL_USER') || 'root';
         const password = configService.get<string>('MYSQL_PASSWORD');
-        const database = configService.get<string>('MYSQL_DATABASE') || 'app_db';
+        const database =
+          configService.get<string>('MYSQL_DATABASE') || 'app_db';
         const port = configService.get<number>('MYSQL_PORT') || 3306;
 
-        const writerHost = 'bridge-database.c0rcmqc0kwek.us-east-1.rds.amazonaws.com';
-        const readerHost = 'bridge-database.c0rcmqc0kwek.us-east-1.rds.amazonaws.com';
+        const writerHost =
+          'bridge-database.c0rcmqc0kwek.us-east-1.rds.amazonaws.com';
+        const readerHost =
+          'bridge-database.c0rcmqc0kwek.us-east-1.rds.amazonaws.com';
 
         const ssl = {
           rejectUnauthorized: false,
         };
 
-        const isServerless = configService.get<string>('VERCEL_ENV') !== undefined;
+        const isServerless =
+          configService.get<string>('VERCEL_ENV') !== undefined;
 
         return {
           type: 'mysql',
@@ -82,13 +85,31 @@ import { CurrencyPair } from './currency/currency-pair.entity';
             queueLimit: 0,
             idleTimeout: 30000,
           },
-          entities: [User, Friend, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair],
+          entities: [
+            User,
+            Friend,
+            Wallet,
+            Transaction,
+            Avatar,
+            Cue,
+            Match,
+            CurrencyPair,
+          ],
           synchronize: configService.get<string>('NODE_ENV') !== 'production',
         };
       },
     }),
     // Feature entities should ideally be moved to their respective modules
-    TypeOrmModule.forFeature([User, Friend, Wallet, Transaction, Avatar, Cue, Match, CurrencyPair]), 
+    TypeOrmModule.forFeature([
+      User,
+      Friend,
+      Wallet,
+      Transaction,
+      Avatar,
+      Cue,
+      Match,
+      CurrencyPair,
+    ]),
     AuthModule,
     TransactionsModule,
     CloudinaryModule,
@@ -100,7 +121,12 @@ import { CurrencyPair } from './currency/currency-pair.entity';
     MatchmakingModule,
     CurrencyPairsModule,
   ],
-  controllers: [UsersController, WalletsController, AvatarsController, CuesController], 
+  controllers: [
+    UsersController,
+    WalletsController,
+    AvatarsController,
+    CuesController,
+  ],
   providers: [UsersService, WalletsService, AvatarsService, CuesService],
 })
 export class AppModule {}

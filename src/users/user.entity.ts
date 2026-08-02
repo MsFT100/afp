@@ -50,13 +50,13 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   deactivationReason?: string | null;
 
-  @Column({ default: () => "\"'0'\"" })
+  @Column({ default: () => '"\'0\'"' })
   ownedCues!: string;
 
-  @Column({ default: "" })
+  @Column({ default: '' })
   ownedChats!: string;
 
-  @Column({ default: "" })
+  @Column({ default: '' })
   ownedAvatars!: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -114,6 +114,62 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true })
   resetTokenExpiry?: Date | null;
+
+  // ==================== WITHDRAWAL / BANKING FIELDS ====================
+
+  @Column({ type: 'varchar', nullable: true })
+  bankName?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  bankCode?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  accountNumber?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  accountHolderName?: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  accountVerified!: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  bankVerificationDate?: Date | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  bankVerificationMethod?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  mobileMoneyProvider?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  mobileMoneyNumber?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  preferredWithdrawalMethod?: string | null;
+
+  @Column({ type: 'varchar', default: 'USD' })
+  withdrawalCurrency!: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  paystackRecipientCode?: string | null;
+
+  @Column({ type: 'boolean', default: true })
+  allowWithdrawals!: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  consecutiveWithdrawalFailures!: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 5000 })
+  dailyWithdrawalLimit!: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 100000 })
+  monthlyWithdrawalLimit!: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  monthlyWithdrawalTotal!: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastWithdrawalDate?: Date | null;
 
   @CreateDateColumn()
   createdAt!: Date;

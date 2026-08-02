@@ -25,7 +25,4 @@ export class CurrencyPairsController {
     await this.currencyPairsService.handleDailyUpdate();
     return { message: 'Exchange rates update process completed successfully' };
   }
-
-  
-
 }

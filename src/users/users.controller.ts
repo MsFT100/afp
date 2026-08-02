@@ -58,13 +58,21 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('me/buy-cue')
-  async buyCue(@Request() req, @Body('index') index: number, @Body('cost') cost: number) {
+  async buyCue(
+    @Request() req,
+    @Body('index') index: number,
+    @Body('cost') cost: number,
+  ) {
     return this.usersService.addBoughtCue(req.user.id, index, cost);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('me/buy-chat')
-  async buyChat(@Request() req, @Body('index') index: number, @Body('cost') cost: number) {
+  async buyChat(
+    @Request() req,
+    @Body('index') index: number,
+    @Body('cost') cost: number,
+  ) {
     return this.usersService.addBoughtChat(req.user.id, index, cost);
   }
 
@@ -92,13 +100,22 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Patch('me/phone')
   async updatePhone(@Request() req, @Body() updatePhoneDto: UpdatePhoneDto) {
-    return this.usersService.updatePhone(req.user.id, updatePhoneDto.phoneNumber);
+    return this.usersService.updatePhone(
+      req.user.id,
+      updatePhoneDto.phoneNumber,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('me/display-name')
-  async updateDisplayName(@Request() req, @Body() updateDisplayNameDto: UpdateDisplayNameDto) {
-    return this.usersService.updateDisplayName(req.user.id, updateDisplayNameDto.displayName);
+  async updateDisplayName(
+    @Request() req,
+    @Body() updateDisplayNameDto: UpdateDisplayNameDto,
+  ) {
+    return this.usersService.updateDisplayName(
+      req.user.id,
+      updateDisplayNameDto.displayName,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -121,7 +138,10 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get('friends/check/:friendUserId')
-  async checkFriend(@Request() req, @Param('friendUserId', ParseUUIDPipe) friendUserId: string) {
+  async checkFriend(
+    @Request() req,
+    @Param('friendUserId', ParseUUIDPipe) friendUserId: string,
+  ) {
     return this.usersService.checkFriend(req.user.id, friendUserId);
   }
 }

@@ -58,7 +58,7 @@ export class AdminController {
     @Query('search') search?: string,
   ) {
     // Corrected to call listAllUsers to fetch all users as requested previously
-    return this.adminService.listAllUsers( 
+    return this.adminService.listAllUsers(
       parseInt(page, 10),
       parseInt(limit, 10),
       search,
@@ -66,9 +66,7 @@ export class AdminController {
   }
 
   @Get('users/:id')
-  async getPlayerDetails(
-    @Param('id') userId: string
-  ) {
+  async getPlayerDetails(@Param('id') userId: string) {
     // Fetch user details including their wallet balance
     return this.adminService.getPlayerDetailsWithBalance(userId);
   }
@@ -144,7 +142,8 @@ export class AdminController {
   @Patch('users/:id')
   async updatePlayer(
     @Param('id') id: string,
-    @Body() body: { displayName?: string; email?: string; phoneNumber?: string },
+    @Body()
+    body: { displayName?: string; email?: string; phoneNumber?: string },
   ) {
     return this.adminService.updateUser(id, body);
   }
@@ -166,7 +165,8 @@ export class AdminController {
     @Headers('if-modified-since') ifModifiedSince?: string,
     @Res({ passthrough: true }) res?: Response,
   ) {
-    const latestTimestamp = await this.matchmakingService.getLatestMatchTimestamp();
+    const latestTimestamp =
+      await this.matchmakingService.getLatestMatchTimestamp();
 
     if (latestTimestamp && ifModifiedSince) {
       const ifModified = new Date(ifModifiedSince).getTime();
@@ -177,8 +177,14 @@ export class AdminController {
       }
     }
 
-    const result = await this.matchmakingService.findAll(parseInt(page, 10), parseInt(limit, 10));
-    (res as Response).set('Last-Modified', latestTimestamp || new Date().toUTCString());
+    const result = await this.matchmakingService.findAll(
+      parseInt(page, 10),
+      parseInt(limit, 10),
+    );
+    (res as Response).set(
+      'Last-Modified',
+      latestTimestamp || new Date().toUTCString(),
+    );
     return result;
   }
 

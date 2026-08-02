@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, UpdateDateColumn, Unique } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  Unique,
+} from 'typeorm';
 
 @Entity('currency_pairs')
 @Unique(['baseCurrency', 'quoteCurrency'])

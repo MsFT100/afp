@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cue, Rarity } from './cue.entity';
@@ -18,8 +22,26 @@ export class CuesService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
-  async create(name: string, imageUrl: string, publicId: string, price: number, power: number, aim: number, time: number, rarity: Rarity): Promise<Cue> {
-    const cue = this.cueRepository.create({ name, imageUrl, publicId, price, power, aim, time, rarity });
+  async create(
+    name: string,
+    imageUrl: string,
+    publicId: string,
+    price: number,
+    power: number,
+    aim: number,
+    time: number,
+    rarity: Rarity,
+  ): Promise<Cue> {
+    const cue = this.cueRepository.create({
+      name,
+      imageUrl,
+      publicId,
+      price,
+      power,
+      aim,
+      time,
+      rarity,
+    });
     return this.cueRepository.save(cue);
   }
 
@@ -50,7 +72,8 @@ export class CuesService {
     const cue = await this.cueRepository.findOne({ where: { id: cueId } });
 
     if (!user || !cue) throw new NotFoundException('User or Cue not found');
-    if (!cue.isPublished) throw new BadRequestException('Cue is not available for purchase');
+    if (!cue.isPublished)
+      throw new BadRequestException('Cue is not available for purchase');
 
     const cueRef = `'${cue.id}'`;
     if (user.ownedCues.includes(cueRef)) {
@@ -58,7 +81,12 @@ export class CuesService {
     }
 
     const reference = `buy_cue_${cue.id.substring(0, 8)}_${Date.now()}`;
-    await this.walletsService.deductBalance(userId, Number(cue.price), TransactionType.PURCHASE, reference);
+    await this.walletsService.deductBalance(
+      userId,
+      Number(cue.price),
+      TransactionType.PURCHASE,
+      reference,
+    );
 
     user.ownedCues = user.ownedCues ? `${user.ownedCues};${cueRef}` : cueRef;
     return this.userRepository.save(user);

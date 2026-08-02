@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -7,7 +7,8 @@ import { Repository } from 'typeorm';
 
 const TITLE_ID = process.env.PLAYFAB_TITLE_ID || 'YOUR_TITLE_ID';
 const SECRET_KEY = process.env.PLAYFAB_SECRET_KEY || 'YOUR_SECRET_KEY';
-const SEGMENT_ID = process.env.PLAYFAB_ALL_PLAYERS_SEGMENT_ID || 'YOUR_ALL_PLAYERS_SEGMENT_ID';
+const SEGMENT_ID =
+  process.env.PLAYFAB_ALL_PLAYERS_SEGMENT_ID || 'YOUR_ALL_PLAYERS_SEGMENT_ID';
 
 async function fetchPlayers(continuationToken: string | null = null) {
   try {
@@ -16,13 +17,16 @@ async function fetchPlayers(continuationToken: string | null = null) {
       {
         SegmentId: SEGMENT_ID,
         MaxBatchSize: 1000,
-        ContinuationToken: continuationToken
+        ContinuationToken: continuationToken,
       },
-      { headers: { 'X-SecretKey': SECRET_KEY } }
+      { headers: { 'X-SecretKey': SECRET_KEY } },
     );
     return res.data.data;
   } catch (error: any) {
-    console.error('PlayFab API Error:', error.response?.data || error.message || error);
+    console.error(
+      'PlayFab API Error:',
+      error.response?.data || error.message || error,
+    );
     throw error;
   }
 }
@@ -48,7 +52,7 @@ async function migratePlayers() {
         // The User entity requires email, password, and phoneNumber.
         // We generate placeholders here. Adjust this if you have the actual data.
         const email = `${player.PlayerId}@playfab.internal`;
-        const password = 'migrated_user_no_password'; 
+        const password = 'migrated_user_no_password';
         const phoneNumber = '0000000000';
         const displayName = player.DisplayName || 'PlayFab Player';
 
@@ -71,7 +75,9 @@ async function migratePlayers() {
       }
 
       totalMigrated += PlayerProfiles.length;
-      console.log(`Migrated batch: ${PlayerProfiles.length}. Total: ${totalMigrated}.`);
+      console.log(
+        `Migrated batch: ${PlayerProfiles.length}. Total: ${totalMigrated}.`,
+      );
     } while (token);
 
     console.log('Migration completed successfully!');

@@ -3,12 +3,12 @@ import {
   Post,
   Body,
   Headers,
+  Req,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { WalletsService } from '../wallet/wallet.service';
 import { ConfigService } from '@nestjs/config';
-import { TransactionType } from '../transactions/transaction.entity';
+import { PaystackWebhookService } from './paystack.webhook.service';
 import * as crypto from 'crypto';
 
 @Controller('payment')
@@ -16,49 +16,49 @@ export class PaystackWebhookController {
   private readonly logger = new Logger(PaystackWebhookController.name);
 
   constructor(
-    private readonly walletsService: WalletsService,
+    private readonly webhookService: PaystackWebhookService,
     private readonly configService: ConfigService,
   ) {}
 
   @Post('webhook')
   async handleWebhook(
+    @Req() req: any,
     @Body() body: any,
     @Headers('x-paystack-signature') signature: string,
   ) {
-    const secret = this.configService.get<string>('PAYSTACK_SECRET_KEY');
-    
-    if (!secret) {
-      this.logger.error('PAYSTACK_SECRET_KEY is not defined');
-      throw new BadRequestException('Configuration error');
+    if (!signature) {
+      throw new BadRequestException('Missing Paystack signature');
     }
 
-    // Verify the signature to ensure the request is genuinely from Paystack
-    const hash = crypto
-      .createHmac('sha512', secret)
-      .update(JSON.stringify(body))
-      .digest('hex');
+    // Paystack signs the raw request body. Use req.rawBody (set in main.ts)
+    // and fall back to a re-serialization of the parsed body.
+    const rawBody = req.rawBody ? req.rawBody.toString() : JSON.stringify(body);
 
-    if (hash !== signature) {
+    if (!this.verifySignature(signature, rawBody)) {
       this.logger.error('Invalid Paystack webhook signature');
       throw new BadRequestException('Invalid signature');
     }
 
-    if (body.event === 'charge.success') {
-      const { reference, amount, currency } = body.data;
-      
-      // Find the pending transaction to get the user ID
-      const transaction = await this.walletsService.transactionsService.transactionsRepository.findOne({
-        where: { reference },
-        relations: ['user'],
-      });
+    await this.webhookService.handlePaymentWebhook(body);
 
-      if (transaction && transaction.user) {
-        const amountInMainUnit = amount / 100; // Paystack sends amount in Kobo
-        await this.walletsService.creditUserWalletFromWebhook(transaction.user.id, amountInMainUnit, reference, TransactionType.DEPOSIT, currency);
-        this.logger.log(`Successfully processed webhook for reference: ${reference}`);
-      }
-    }
-
+    // Always return 200 so Paystack does not retry
     return { status: 'success' };
+  }
+
+  private verifySignature(signature: string, rawBody: string): boolean {
+    // Prefer the dedicated webhook secret, but fall back to the secret key
+    // for backward compatibility with the previous configuration.
+    const secrets = [
+      this.configService.get<string>('PAYSTACK_WEBHOOK_SECRET'),
+      this.configService.get<string>('PAYSTACK_SECRET_KEY'),
+    ].filter((s): s is string => !!s);
+
+    return secrets.some((secret) => {
+      const hash = crypto
+        .createHmac('sha512', secret)
+        .update(rawBody)
+        .digest('hex');
+      return hash === signature;
+    });
   }
 }

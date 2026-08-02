@@ -44,7 +44,9 @@ describe('MailService', () => {
       const callArg = sendMailMock.mock.calls[0][0];
       expect(callArg.to).toBe('player@test.com');
       expect(callArg.subject).toBe('Welcome to African Pool Pros!');
-      expect(callArg.from).toBe('"African Pool Pros" <no-reply@africanpoolpros.com>');
+      expect(callArg.from).toBe(
+        '"African Pool Pros" <no-reply@africanpoolpros.com>',
+      );
     });
 
     it('should include the display name in the email body', async () => {
@@ -70,10 +72,12 @@ describe('MailService', () => {
     });
 
     it('should use "#" as fallback when BASE_URL is not set', async () => {
-      configService.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'BASE_URL') return defaultValue ?? undefined;
-        return undefined;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: any) => {
+          if (key === 'BASE_URL') return defaultValue ?? undefined;
+          return undefined;
+        },
+      );
 
       await service.sendWelcomeEmail('player@test.com', 'PlayerOne');
 
@@ -86,7 +90,10 @@ describe('MailService', () => {
     it('should send a password reset email with the correct recipient and subject', async () => {
       configService.get.mockReturnValue(undefined);
 
-      await service.sendPasswordResetEmail('player@test.com', 'reset-token-123');
+      await service.sendPasswordResetEmail(
+        'player@test.com',
+        'reset-token-123',
+      );
 
       expect(sendMailMock).toHaveBeenCalledTimes(1);
       const callArg = sendMailMock.mock.calls[0][0];
@@ -97,7 +104,10 @@ describe('MailService', () => {
     it('should include the reset token in the link', async () => {
       configService.get.mockReturnValue(undefined);
 
-      await service.sendPasswordResetEmail('player@test.com', 'reset-token-xyz');
+      await service.sendPasswordResetEmail(
+        'player@test.com',
+        'reset-token-xyz',
+      );
 
       const html = sendMailMock.mock.calls[0][0].html;
       expect(html).toContain('reset-token-xyz');
@@ -105,10 +115,12 @@ describe('MailService', () => {
     });
 
     it('should use default FRONTEND_URL of http://localhost:3000 when not configured', async () => {
-      configService.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'FRONTEND_URL') return defaultValue ?? undefined;
-        return undefined;
-      });
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: any) => {
+          if (key === 'FRONTEND_URL') return defaultValue ?? undefined;
+          return undefined;
+        },
+      );
 
       await service.sendPasswordResetEmail('test@test.com', 'tok');
 
@@ -125,7 +137,9 @@ describe('MailService', () => {
       await service.sendPasswordResetEmail('test@test.com', 'tok');
 
       const html = sendMailMock.mock.calls[0][0].html;
-      expect(html).toContain('https://africanpoolpros.com/reset-password?token=');
+      expect(html).toContain(
+        'https://africanpoolpros.com/reset-password?token=',
+      );
     });
 
     it('should mention the 1-hour expiry in the body', async () => {

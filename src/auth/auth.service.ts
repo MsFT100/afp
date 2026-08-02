@@ -38,7 +38,9 @@ export class AuthService {
     giveWelcomeBonus: boolean = true,
   ): Promise<User> {
     const normalizedEmail = email.toLowerCase();
-    const existingUser = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email: normalizedEmail },
+    });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -65,9 +67,14 @@ export class AuthService {
 
     const saved = await this.userRepository.save(userEntity);
 
-    this.mailService.sendWelcomeEmail(saved.email, saved.displayName).catch((error) => {
-      this.logger.error(`Failed to send welcome email to ${saved.email}`, error);
-    });
+    this.mailService
+      .sendWelcomeEmail(saved.email, saved.displayName)
+      .catch((error) => {
+        this.logger.error(
+          `Failed to send welcome email to ${saved.email}`,
+          error,
+        );
+      });
 
     if (giveWelcomeBonus) {
       await this.walletsService.addBalance(saved.id, WELCOME_BONUS);
@@ -81,7 +88,8 @@ export class AuthService {
     password: string,
   ): Promise<{ token: string; user: Partial<User> }> {
     // Use QueryBuilder to explicitly select the hidden password field
-    const user = await this.userRepository.createQueryBuilder('user')
+    const user = await this.userRepository
+      .createQueryBuilder('user')
       .addSelect('user.password')
       .where('user.email = :email', { email })
       .getOne();
@@ -112,17 +120,27 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    const user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
     if (!user) return;
 
     const token = randomBytes(32).toString('hex');
     const expiry = new Date(Date.now() + 3600000);
 
-    await this.userRepository.update(user.id, { resetToken: token, resetTokenExpiry: expiry });
-
-    this.mailService.sendPasswordResetEmail(user.email, token).catch((error) => {
-      this.logger.error(`Failed to send password reset email to ${user.email}`, error);
+    await this.userRepository.update(user.id, {
+      resetToken: token,
+      resetTokenExpiry: expiry,
     });
+
+    this.mailService
+      .sendPasswordResetEmail(user.email, token)
+      .catch((error) => {
+        this.logger.error(
+          `Failed to send password reset email to ${user.email}`,
+          error,
+        );
+      });
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
@@ -142,8 +160,12 @@ export class AuthService {
     });
   }
 
-  async loginWithPromoCode(promoCode: string, password: string): Promise<{ token: string; user: Partial<User> }> {
-    const user = await this.userRepository.createQueryBuilder('user')
+  async loginWithPromoCode(
+    promoCode: string,
+    password: string,
+  ): Promise<{ token: string; user: Partial<User> }> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
       .addSelect('user.password')
       .where('user.promoCode = :promoCode', { promoCode })
       .getOne();

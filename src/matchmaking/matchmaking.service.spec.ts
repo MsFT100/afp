@@ -10,8 +10,12 @@ import { In, Repository } from 'typeorm';
 
 describe('MatchmakingService', () => {
   let service: MatchmakingService;
-  let matchRepository: jest.Mocked<Partial<Record<keyof Repository<Match>, jest.Mock>>>;
-  let playerRepository: jest.Mocked<Partial<Record<keyof Repository<User>, jest.Mock>>>;
+  let matchRepository: jest.Mocked<
+    Partial<Record<keyof Repository<Match>, jest.Mock>>
+  >;
+  let playerRepository: jest.Mocked<
+    Partial<Record<keyof Repository<User>, jest.Mock>>
+  >;
   let walletsService: jest.Mocked<Partial<WalletsService>>;
 
   const winnerId = 'winner-uuid-123';
@@ -113,17 +117,39 @@ describe('MatchmakingService', () => {
       expect(matchRepository.save).toHaveBeenCalledWith(savedMatch);
 
       expect(playerRepository.increment).toHaveBeenCalledTimes(4);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: winnerId }, 'gamesPlayed', 1);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: winnerId }, 'gamesWon', 1);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: loserId }, 'gamesPlayed', 1);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: loserId }, 'gamesLost', 1);
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: winnerId },
+        'gamesPlayed',
+        1,
+      );
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: winnerId },
+        'gamesWon',
+        1,
+      );
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: loserId },
+        'gamesPlayed',
+        1,
+      );
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: loserId },
+        'gamesLost',
+        1,
+      );
 
       expect(walletsService.deductBalance).toHaveBeenCalledTimes(2);
       expect(walletsService.deductBalance).toHaveBeenCalledWith(
-        winnerId, 100, TransactionType.TABLE_FEE, `match_${savedMatchId}_winner_deduct`,
+        winnerId,
+        100,
+        TransactionType.TABLE_FEE,
+        `match_${savedMatchId}_winner_deduct`,
       );
       expect(walletsService.deductBalance).toHaveBeenCalledWith(
-        loserId, 100, TransactionType.TABLE_FEE, `match_${savedMatchId}_loser_deduct`,
+        loserId,
+        100,
+        TransactionType.TABLE_FEE,
+        `match_${savedMatchId}_loser_deduct`,
       );
 
       expect(walletsService.addBalance).toHaveBeenCalledWith(winnerId, 180);
@@ -134,8 +160,12 @@ describe('MatchmakingService', () => {
     it('should throw NotFoundException when some players are not found', async () => {
       playerRepository.findBy!.mockResolvedValue([mockWinner]);
 
-      await expect(service.recordMatch(defaultDto)).rejects.toThrow(NotFoundException);
-      await expect(service.recordMatch(defaultDto)).rejects.toThrow('One or more players not found');
+      await expect(service.recordMatch(defaultDto)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.recordMatch(defaultDto)).rejects.toThrow(
+        'One or more players not found',
+      );
 
       expect(matchRepository.create).not.toHaveBeenCalled();
       expect(matchRepository.save).not.toHaveBeenCalled();
@@ -157,7 +187,10 @@ describe('MatchmakingService', () => {
 
       expect(walletsService.deductBalance).toHaveBeenCalledTimes(1);
       expect(walletsService.deductBalance).toHaveBeenCalledWith(
-        winnerId, 100, TransactionType.TABLE_FEE, `match_${savedMatchId}_winner_deduct`,
+        winnerId,
+        100,
+        TransactionType.TABLE_FEE,
+        `match_${savedMatchId}_winner_deduct`,
       );
       expect(walletsService.addBalance).toHaveBeenCalledWith(winnerId, 180);
     });
@@ -167,17 +200,22 @@ describe('MatchmakingService', () => {
       const dto = { ...defaultDto, countryCode };
       const winnerWithoutCountry = { ...mockWinner, countryCode: null };
       const loserWithoutCountry = { ...mockLoser, countryCode: null };
-      playerRepository.findBy!.mockResolvedValue([winnerWithoutCountry, loserWithoutCountry]);
+      playerRepository.findBy!.mockResolvedValue([
+        winnerWithoutCountry,
+        loserWithoutCountry,
+      ]);
       matchRepository.create!.mockReturnValue(savedMatch);
       matchRepository.save!.mockResolvedValue(savedMatch);
 
       await service.recordMatch(dto);
 
       expect(playerRepository.update).toHaveBeenCalledWith(
-        { id: winnerId }, { countryCode },
+        { id: winnerId },
+        { countryCode },
       );
       expect(playerRepository.update).toHaveBeenCalledWith(
-        { id: loserId }, { countryCode },
+        { id: loserId },
+        { countryCode },
       );
     });
 
@@ -186,7 +224,10 @@ describe('MatchmakingService', () => {
       const dto = { ...defaultDto, countryCode };
       const winnerWithCountry = { ...mockWinner, countryCode: 'NG' };
       const loserWithCountry = { ...mockLoser, countryCode: 'GH' };
-      playerRepository.findBy!.mockResolvedValue([winnerWithCountry, loserWithCountry]);
+      playerRepository.findBy!.mockResolvedValue([
+        winnerWithCountry,
+        loserWithCountry,
+      ]);
       matchRepository.create!.mockReturnValue(savedMatch);
       matchRepository.save!.mockResolvedValue(savedMatch);
 
@@ -199,9 +240,13 @@ describe('MatchmakingService', () => {
       playerRepository.findBy!.mockResolvedValue([mockWinner, mockLoser]);
       matchRepository.create!.mockReturnValue(savedMatch);
       matchRepository.save!.mockResolvedValue(savedMatch);
-      walletsService.deductBalance!.mockRejectedValueOnce(new Error('Insufficient balance'));
+      walletsService.deductBalance!.mockRejectedValueOnce(
+        new Error('Insufficient balance'),
+      );
 
-      await expect(service.recordMatch(defaultDto)).rejects.toThrow('Insufficient balance');
+      await expect(service.recordMatch(defaultDto)).rejects.toThrow(
+        'Insufficient balance',
+      );
 
       expect(walletsService.addBalance).not.toHaveBeenCalled();
     });
@@ -210,11 +255,13 @@ describe('MatchmakingService', () => {
       playerRepository.findBy!.mockResolvedValue([mockWinner, mockLoser]);
       matchRepository.create!.mockReturnValue(savedMatch);
       matchRepository.save!.mockResolvedValue(savedMatch);
-      walletsService.deductBalance!
-        .mockResolvedValueOnce(undefined)
+      walletsService
+        .deductBalance!.mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error('Unique constraint violation'));
 
-      await expect(service.recordMatch(defaultDto)).rejects.toThrow('Unique constraint violation');
+      await expect(service.recordMatch(defaultDto)).rejects.toThrow(
+        'Unique constraint violation',
+      );
 
       expect(walletsService.addBalance).not.toHaveBeenCalled();
     });
@@ -224,9 +271,13 @@ describe('MatchmakingService', () => {
       matchRepository.create!.mockReturnValue(savedMatch);
       matchRepository.save!.mockResolvedValue(savedMatch);
       walletsService.deductBalance!.mockResolvedValue(undefined);
-      walletsService.addBalance!.mockRejectedValueOnce(new Error('Wallet error'));
+      walletsService.addBalance!.mockRejectedValueOnce(
+        new Error('Wallet error'),
+      );
 
-      await expect(service.recordMatch(defaultDto)).rejects.toThrow('Wallet error');
+      await expect(service.recordMatch(defaultDto)).rejects.toThrow(
+        'Wallet error',
+      );
 
       expect(walletsService.deductBalance).toHaveBeenCalledTimes(2);
     });
@@ -238,8 +289,10 @@ describe('MatchmakingService', () => {
 
       await service.recordMatch(defaultDto);
 
-      const winnerRef = (walletsService.deductBalance as jest.Mock).mock.calls[0][3];
-      const loserRef = (walletsService.deductBalance as jest.Mock).mock.calls[1][3];
+      const winnerRef = (walletsService.deductBalance as jest.Mock).mock
+        .calls[0][3];
+      const loserRef = (walletsService.deductBalance as jest.Mock).mock
+        .calls[1][3];
 
       expect(winnerRef).toBe(`match_${savedMatchId}_winner_deduct`);
       expect(loserRef).toBe(`match_${savedMatchId}_loser_deduct`);
@@ -254,10 +307,26 @@ describe('MatchmakingService', () => {
       await service.recordMatch(defaultDto);
 
       expect(playerRepository.increment).toHaveBeenCalledTimes(4);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: winnerId }, 'gamesPlayed', 1);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: winnerId }, 'gamesWon', 1);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: loserId }, 'gamesPlayed', 1);
-      expect(playerRepository.increment).toHaveBeenCalledWith({ id: loserId }, 'gamesLost', 1);
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: winnerId },
+        'gamesPlayed',
+        1,
+      );
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: winnerId },
+        'gamesWon',
+        1,
+      );
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: loserId },
+        'gamesPlayed',
+        1,
+      );
+      expect(playerRepository.increment).toHaveBeenCalledWith(
+        { id: loserId },
+        'gamesLost',
+        1,
+      );
     });
   });
 });

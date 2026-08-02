@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsArray, IsOptional, IsUUID, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsArray,
+  IsOptional,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export class RecordMatchDto {
   @IsArray()

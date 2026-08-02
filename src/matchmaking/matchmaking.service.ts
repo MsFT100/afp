@@ -29,7 +29,16 @@ export class MatchmakingService {
     return matches.length > 0 ? matches[0].timestamp.toUTCString() : null;
   }
 
-  async findAll(page: number = 1, limit: number = 20): Promise<{ data: Match[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{
+    data: Match[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const [data, total] = await this.matchRepository.findAndCount({
       relations: ['winner', 'loser'],
       order: { timestamp: 'DESC' },
@@ -60,7 +69,9 @@ export class MatchmakingService {
         'COUNT(match.id) AS "totalGames"',
         'CAST(COUNT(CASE WHEN winner.id = player.id THEN 1 END) AS DECIMAL(10,2)) / NULLIF(COUNT(match.id), 0) * 100 AS "winRate"',
       ])
-      .groupBy('player.id, player.displayName, player.countryCode, player.region')
+      .groupBy(
+        'player.id, player.displayName, player.countryCode, player.region',
+      )
       .offset(offset)
       .limit(limit);
 
@@ -115,8 +126,8 @@ export class MatchmakingService {
       metadata: dto.metadata,
       countryCode: dto.countryCode,
       players: players,
-      winner: players.find(p => p.id === dto.winnerId),
-      loser: players.find(p => p.id === dto.loserId),
+      winner: players.find((p) => p.id === dto.winnerId),
+      loser: players.find((p) => p.id === dto.loserId),
     });
 
     const savedMatch = await this.matchRepository.save(match);
@@ -131,13 +142,23 @@ export class MatchmakingService {
 
     // Update player's countryCode if provided in DTO and not already set on the user
     if (dto.countryCode) {
-      const winner = players.find(p => p.id === dto.winnerId);
+      const winner = players.find((p) => p.id === dto.winnerId);
       if (winner && !winner.countryCode) {
-        updatePromises.push(this.playerRepository.update({ id: dto.winnerId }, { countryCode: dto.countryCode }));
+        updatePromises.push(
+          this.playerRepository.update(
+            { id: dto.winnerId },
+            { countryCode: dto.countryCode },
+          ),
+        );
       }
-      const loser = players.find(p => p.id === dto.loserId);
+      const loser = players.find((p) => p.id === dto.loserId);
       if (loser && !loser.countryCode) {
-        updatePromises.push(this.playerRepository.update({ id: dto.loserId }, { countryCode: dto.countryCode }));
+        updatePromises.push(
+          this.playerRepository.update(
+            { id: dto.loserId },
+            { countryCode: dto.countryCode },
+          ),
+        );
       }
     }
 
@@ -146,15 +167,28 @@ export class MatchmakingService {
     // Deduct entry fee from both players and credit winner's wallet
     // Use unique references to avoid unique constraint violation on transaction.reference
     try {
-      const winnerId = dto.winnerId!;
+      const winnerId = dto.winnerId;
       const loserId = dto.loserId!;
-      await this.walletsService.deductBalance(winnerId, dto.entryCoins, TransactionType.TABLE_FEE, `match_${savedMatch.id}_winner_deduct`);
+      await this.walletsService.deductBalance(
+        winnerId,
+        dto.entryCoins,
+        TransactionType.TABLE_FEE,
+        `match_${savedMatch.id}_winner_deduct`,
+      );
       if (loserId) {
-        await this.walletsService.deductBalance(loserId, dto.entryCoins, TransactionType.TABLE_FEE, `match_${savedMatch.id}_loser_deduct`);
+        await this.walletsService.deductBalance(
+          loserId,
+          dto.entryCoins,
+          TransactionType.TABLE_FEE,
+          `match_${savedMatch.id}_loser_deduct`,
+        );
       }
       await this.walletsService.addBalance(winnerId, dto.winAmount);
     } catch (err) {
-      this.logger.error('Wallet transaction failed for match ' + savedMatch.id, err);
+      this.logger.error(
+        'Wallet transaction failed for match ' + savedMatch.id,
+        err,
+      );
       throw err;
     }
 
@@ -162,14 +196,16 @@ export class MatchmakingService {
     if (match.winner) {
       match.winner.gamesPlayed = (match.winner.gamesPlayed || 0) + 1;
       match.winner.gamesWon = (match.winner.gamesWon || 0) + 1;
-      if (dto.countryCode && !match.winner.countryCode) { // Reflect countryCode update in memory
+      if (dto.countryCode && !match.winner.countryCode) {
+        // Reflect countryCode update in memory
         match.winner.countryCode = dto.countryCode;
       }
     }
     if (match.loser) {
       match.loser.gamesPlayed = (match.loser.gamesPlayed || 0) + 1;
       match.loser.gamesLost = (match.loser.gamesLost || 0) + 1;
-      if (dto.countryCode && !match.loser.countryCode) { // Reflect countryCode update in memory
+      if (dto.countryCode && !match.loser.countryCode) {
+        // Reflect countryCode update in memory
         match.loser.countryCode = dto.countryCode;
       }
     }
@@ -184,7 +220,9 @@ export class MatchmakingService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanUpInvalidMatches() {
     this.logger.log('Starting cleanup of matches with empty IDs...');
-    const result = await this.matchRepository.delete({ id: '' as any });
-    this.logger.log(`Cleanup complete. Deleted ${result.affected || 0} invalid records.`);
+    const result = await this.matchRepository.delete({ id: '' });
+    this.logger.log(
+      `Cleanup complete. Deleted ${result.affected || 0} invalid records.`,
+    );
   }
 }

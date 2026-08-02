@@ -20,7 +20,7 @@ export enum TransactionType {
   MANUAL_ADJUSTMENT = 'manual_adjustment',
   PURCHASE = 'purchase',
   PAYPAL_DEPOSIT = 'paypal_deposit',
-  TABLE_FEE= 'table_fee',
+  TABLE_FEE = 'table_fee',
 }
 
 @Entity()

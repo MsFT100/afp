@@ -3,7 +3,6 @@ import { MatchmakingService } from './matchmaking.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RecordMatchDto } from './dto/record-match.dto';
 
-
 @Controller('matchmaking')
 export class MatchmakingController {
   constructor(private readonly matchmakingService: MatchmakingService) {}
@@ -14,7 +13,6 @@ export class MatchmakingController {
     return this.matchmakingService.recordMatch(recordMatchDto);
   }
 
-
   @Get('leaderboard')
   async getLeaderboard(
     @Query('country') country?: string,
@@ -23,7 +21,13 @@ export class MatchmakingController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
   ) {
-    return this.matchmakingService.getLeaderboard(country, region, metric, Number(page), Number(limit));
+    return this.matchmakingService.getLeaderboard(
+      country,
+      region,
+      metric,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Get('leaderboard-world')
@@ -34,6 +38,12 @@ export class MatchmakingController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
   ) {
-    return this.matchmakingService.getLeaderboard(country, region, metric, Number(page), Number(limit));
+    return this.matchmakingService.getLeaderboard(
+      country,
+      region,
+      metric,
+      Number(page),
+      Number(limit),
+    );
   }
 }
