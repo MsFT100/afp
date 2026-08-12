@@ -158,6 +158,14 @@ export class AdminController {
     return this.adminService.removeCoinsFromUser(id, amount);
   }
 
+  @Post('users/:id/reset-password')
+  async resetPassword(
+    @Param('id') id: string,
+    @Body() body: ResetPasswordDto,
+  ) {
+    return this.adminService.resetUserPassword(id, body.newPassword);
+  }
+
   @Get('matches')
   async listMatches(
     @Query('page') page: string = '1',
