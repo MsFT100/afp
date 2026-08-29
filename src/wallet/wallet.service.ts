@@ -202,13 +202,23 @@ export class WalletsService {
     userId: string,
     amount: number,
     currency: string = 'NGN',
+    method?: string,
+    phone?: string,
   ) {
-    const normalizedCurrency = currency.toUpperCase();
+    const isMpesa = method === 'mpesa';
+    const normalizedCurrency = (isMpesa ? 'KES' : currency).toUpperCase();
     if (!this.supportedCurrencies.includes(normalizedCurrency)) {
       throw new BadRequestException(
-        `Unsupported currency "${currency}". Supported currencies: ${this.supportedCurrencies.join(', ')}`,
+        `Unsupported currency "${normalizedCurrency}". Supported currencies: ${this.supportedCurrencies.join(', ')}`,
       );
     }
+
+    if (isMpesa && !phone) {
+      throw new BadRequestException(
+        'An M-Pesa phone number is required for mobile money deposits.',
+      );
+    }
+    const mpesaPhone = isMpesa ? phone as string : undefined;
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -234,11 +244,22 @@ export class WalletsService {
     const callbackUrl = `${baseUrl}?transactionRef=${pendingTransaction.reference}`;
 
     try {
+      let chargeAmount = amount;
+      let paystackOptions: { channels?: string[]; phone?: string } | undefined;
+      if (isMpesa) {
+        chargeAmount = await this.convertUsdToLocal(amount, 'KES');
+        paystackOptions = {
+          channels: ['mobile_money'],
+          phone: this.normalizeMpesaPhone(mpesaPhone!),
+        };
+      }
+
       const data: any = await this.paystackService.initializeTransaction(
         user.email,
-        amount,
+        chargeAmount,
         callbackUrl,
         normalizedCurrency,
+        ...(paystackOptions ? [paystackOptions] : []),
       );
 
       if (!data.status) {
@@ -268,6 +289,38 @@ export class WalletsService {
           : 'Paystack initialization failed due to an unknown error';
       throw new BadRequestException(message);
     }
+  }
+
+  private normalizeMpesaPhone(phone: string): string {
+    let cleaned = phone.replace(/[^0-9]/g, '');
+    if (cleaned.startsWith('254')) {
+      return cleaned;
+    }
+    if (cleaned.startsWith('0')) {
+      return '254' + cleaned.slice(1);
+    }
+    if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
+      return '254' + cleaned;
+    }
+    return cleaned;
+  }
+
+  private async convertUsdToLocal(usdAmount: number, currency: string): Promise<number> {
+    const normalized = currency.toUpperCase();
+    if (normalized === 'USD') {
+      return usdAmount;
+    }
+    const pair = await this.currencyPairRepository.findOne({
+      where: { baseCurrency: 'USD', quoteCurrency: normalized },
+    });
+    if (pair) {
+      const rate = Number(pair.rate);
+      return Math.round(usdAmount * rate * 100) / 100;
+    }
+    this.logger.warn(
+      `No exchange rate found for USD/${normalized}, using 1:1`,
+    );
+    return usdAmount;
   }
 
   private async convertToCoins(

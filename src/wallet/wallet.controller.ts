@@ -51,8 +51,16 @@ export class WalletsController {
     @Req() req: any,
     @Body('amount') amount: number,
     @Body('currency') currency?: string,
+    @Body('method') method?: string,
+    @Body('phone') phone?: string,
   ) {
-    return this.walletsService.initializePayment(req.user.id, amount, currency);
+    return this.walletsService.initializePayment(
+      req.user.id,
+      amount,
+      currency,
+      method,
+      phone,
+    );
   }
 
   /**

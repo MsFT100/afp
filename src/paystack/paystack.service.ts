@@ -30,8 +30,23 @@ export class PaystackService {
     amount: number,
     callbackUrl: string,
     currency: string = 'NGN',
+    options?: { channels?: string[]; phone?: string },
   ): Promise<any> {
     const amountInSmallestUnit = Math.round(amount * 100);
+
+    const payload: any = {
+      email,
+      amount: amountInSmallestUnit,
+      currency,
+      callback_url: callbackUrl,
+    };
+
+    if (options?.channels) {
+      payload.channels = options.channels;
+    }
+    if (options?.phone) {
+      payload.phone = options.phone;
+    }
 
     const response = await fetch(
       `${this.PAYSTACK_API_BASE}/transaction/initialize`,
@@ -41,12 +56,7 @@ export class PaystackService {
           Authorization: `Bearer ${this.PAYSTACK_SECRET}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email,
-          amount: amountInSmallestUnit,
-          currency,
-          callback_url: callbackUrl,
-        }),
+        body: JSON.stringify(payload),
       },
     );
     return response.json();
