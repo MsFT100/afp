@@ -232,6 +232,13 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+  async updateCountry(userId: string, country: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    user.countryCode = country;
+    return this.usersRepository.save(user);
+  }
+
   async updateGameStats(userId: string, isWinner: boolean): Promise<User> {
     // First, check if the user exists to throw NotFoundException if not
     const userExists = await this.usersRepository.count({
@@ -263,7 +270,7 @@ export class UsersService {
   async addFriend(
     userId: string,
     friendUserId: string,
-  ): Promise<{ success: boolean; friend: Friend }> {
+  ): Promise<{ success: boolean; friend: Friend; status: FriendStatus }> {
     if (userId === friendUserId) {
       throw new BadRequestException('Cannot add yourself as a friend');
     }
@@ -281,18 +288,97 @@ export class UsersService {
         { playerId: friendUserId, friendId: userId },
       ],
     });
+
     if (existing) {
+      if (existing.status === FriendStatus.ACCEPTED) {
+        throw new ConflictException('Friendship already exists');
+      }
+      if (existing.status === FriendStatus.BLOCKED) {
+        throw new ConflictException('Friendship already exists');
+      }
+      if (existing.status === FriendStatus.PENDING) {
+        if (existing.playerId === friendUserId) {
+          // The other user already sent me a request - accept it and establish the friendship
+          existing.status = FriendStatus.ACCEPTED;
+          await this.friendRepository.save(existing);
+          return {
+            success: true,
+            friend: existing,
+            status: FriendStatus.ACCEPTED,
+          };
+        }
+        // I already sent them a request - keep it pending
+        return { success: true, friend: existing, status: existing.status };
+      }
       throw new ConflictException('Friendship already exists');
     }
 
     const friend = this.friendRepository.create({
       playerId: userId,
       friendId: friendUserId,
-      status: FriendStatus.ACCEPTED,
+      status: FriendStatus.PENDING,
     });
 
     await this.friendRepository.save(friend);
-    return { success: true, friend };
+    return { success: true, friend, status: FriendStatus.PENDING };
+  }
+
+  async acceptFriend(
+    userId: string,
+    friendUserId: string,
+  ): Promise<{ success: boolean; friend: Friend }> {
+    const request = await this.friendRepository.findOne({
+      where: {
+        playerId: friendUserId,
+        friendId: userId,
+        status: FriendStatus.PENDING,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('No pending friend request found');
+    }
+
+    request.status = FriendStatus.ACCEPTED;
+    await this.friendRepository.save(request);
+    return { success: true, friend: request };
+  }
+
+  async rejectFriend(
+    userId: string,
+    friendUserId: string,
+  ): Promise<{ success: boolean }> {
+    const request = await this.friendRepository.findOne({
+      where: {
+        playerId: friendUserId,
+        friendId: userId,
+        status: FriendStatus.PENDING,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('No pending friend request found');
+    }
+
+    await this.friendRepository.remove(request);
+    return { success: true };
+  }
+
+  async getFriendRequests(userId: string): Promise<
+    { requestId: string; userId: string; displayName: string; createdAt: Date }[]
+  > {
+    const requests = await this.friendRepository.find({
+      where: { friendId: userId, status: FriendStatus.PENDING },
+      relations: ['player'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return requests.map((r) => ({
+      requestId: r.id,
+      userId: r.playerId,
+      displayName: r.player.displayName,
+      createdAt: r.createdAt,
+    }));
   }
 
   async getFriends(userId: string): Promise<

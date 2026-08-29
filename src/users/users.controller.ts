@@ -17,6 +17,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { UpdatePhoneDto } from './update-phone.dto';
 import { UpdateDisplayNameDto } from './update-display-name.dto';
+import { UpdateCountryDto } from './update-country.dto';
 import { FriendUserIdDto } from './friend.dto';
 
 @Controller('users')
@@ -119,9 +120,36 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch('me/country')
+  async updateCountry(
+    @Request() req,
+    @Body() updateCountryDto: UpdateCountryDto,
+  ) {
+    return this.usersService.updateCountry(req.user.id, updateCountryDto.country);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('friends/add')
   async addFriend(@Request() req, @Body() dto: FriendUserIdDto) {
     return this.usersService.addFriend(req.user.id, dto.friendUserId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('friends/accept')
+  async acceptFriend(@Request() req, @Body() dto: FriendUserIdDto) {
+    return this.usersService.acceptFriend(req.user.id, dto.friendUserId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('friends/reject')
+  async rejectFriend(@Request() req, @Body() dto: FriendUserIdDto) {
+    return this.usersService.rejectFriend(req.user.id, dto.friendUserId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('friends/requests')
+  async getFriendRequests(@Request() req) {
+    return this.usersService.getFriendRequests(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
