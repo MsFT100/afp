@@ -365,7 +365,12 @@ export class UsersService {
   }
 
   async getFriendRequests(userId: string): Promise<
-    { requestId: string; userId: string; displayName: string; createdAt: Date }[]
+    {
+      requestId: string;
+      userId: string;
+      displayName: string;
+      createdAt: Date;
+    }[]
   > {
     const requests = await this.friendRepository.find({
       where: { friendId: userId, status: FriendStatus.PENDING },

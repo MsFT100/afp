@@ -194,11 +194,9 @@ export class PaystackService {
     };
 
     if (type === 'mobile_money') {
-      payload.mobile_money = {
-        provider,
-        phone: accountNumber.replace(/[\s-]/g, ''),
-      };
-      delete payload.account_number;
+      const mappedProvider = this.mapMobileMoneyProvider(provider!.toLowerCase());
+      payload.bank_code = mappedProvider;
+      payload.account_number = accountNumber.replace(/[\s-]/g, '');
     } else if (bankCode) {
       payload.bank_code = bankCode;
     }
@@ -237,14 +235,29 @@ export class PaystackService {
     }
   }
 
+  private mapMobileMoneyProvider(provider: string): string {
+    switch ((provider || '').toUpperCase()) {
+      case 'MPESA':
+        return 'MPESA';
+      case 'AIRTEL':
+      case 'AIRTL':
+        return 'AIRTEL';
+      case 'MTN':
+        return 'MTN';
+      case 'VODAFONE':
+        return 'VODAFONE';
+      default:
+        return provider.toUpperCase();
+    }
+  }
+
   /**
    * Initiates a transfer (withdrawal) to a recipient.
    * @param recipientCode Recipient code from createRecipient (data.recipient_code)
    * @param amount Amount in the smallest currency unit (kobo/cents)
    * @param reason Withdrawal reason/description
    * @param reference Our idempotency key; also used to match webhooks
-   */
-  async initiateTransfer(
+   */  async initiateTransfer(
     recipientCode: string,
     amount: number,
     reason: string,

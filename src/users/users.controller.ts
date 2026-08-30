@@ -125,7 +125,10 @@ export class UsersController {
     @Request() req,
     @Body() updateCountryDto: UpdateCountryDto,
   ) {
-    return this.usersService.updateCountry(req.user.id, updateCountryDto.country);
+    return this.usersService.updateCountry(
+      req.user.id,
+      updateCountryDto.country,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

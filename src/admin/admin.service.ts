@@ -177,6 +177,7 @@ export class AdminService {
         lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
+        allowWithdrawals: true,
         wallet: true,
       },
     });
@@ -214,6 +215,19 @@ export class AdminService {
     user.deactivationReason = isActive ? null : reason; // Clear reason if reactivating
 
     return this.userRepository.save(user);
+  }
+
+  async setAllowWithdrawals(
+    userId: string,
+    enabled: boolean,
+  ): Promise<{ id: string; allowWithdrawals: boolean }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    user.allowWithdrawals = enabled;
+    await this.userRepository.save(user);
+
+    return { id: user.id, allowWithdrawals: user.allowWithdrawals };
   }
 
   async manualRegister(registerData: any) {

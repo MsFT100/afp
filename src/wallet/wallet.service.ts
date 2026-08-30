@@ -218,7 +218,7 @@ export class WalletsService {
         'An M-Pesa phone number is required for mobile money deposits.',
       );
     }
-    const mpesaPhone = isMpesa ? phone as string : undefined;
+    const mpesaPhone = isMpesa ? (phone as string) : undefined;
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -292,7 +292,7 @@ export class WalletsService {
   }
 
   private normalizeMpesaPhone(phone: string): string {
-    let cleaned = phone.replace(/[^0-9]/g, '');
+    const cleaned = phone.replace(/[^0-9]/g, '');
     if (cleaned.startsWith('254')) {
       return cleaned;
     }
@@ -305,7 +305,10 @@ export class WalletsService {
     return cleaned;
   }
 
-  private async convertUsdToLocal(usdAmount: number, currency: string): Promise<number> {
+  private async convertUsdToLocal(
+    usdAmount: number,
+    currency: string,
+  ): Promise<number> {
     const normalized = currency.toUpperCase();
     if (normalized === 'USD') {
       return usdAmount;
@@ -317,9 +320,7 @@ export class WalletsService {
       const rate = Number(pair.rate);
       return Math.round(usdAmount * rate * 100) / 100;
     }
-    this.logger.warn(
-      `No exchange rate found for USD/${normalized}, using 1:1`,
-    );
+    this.logger.warn(`No exchange rate found for USD/${normalized}, using 1:1`);
     return usdAmount;
   }
 
@@ -591,6 +592,7 @@ export class WalletsService {
     if (!user) throw new NotFoundException('User not found');
 
     return {
+      balance: Number(user.wallet.balance) || 0,
       bankDetails: user.bankCode
         ? {
             bankName: user.bankName,
@@ -638,9 +640,13 @@ export class WalletsService {
     if (!user.wallet) throw new NotFoundException('Wallet not found');
 
     if (!user.allowWithdrawals) {
-      throw new ForbiddenException(
-        'Withdrawals are not enabled for your account. Contact support.',
+      const hasPayoutDetails = Boolean(
+        user.bankCode || user.mobileMoneyProvider,
       );
+      const message = hasPayoutDetails
+        ? 'Withdrawals are not enabled for your account. Re-save your bank or mobile money details, or contact support.'
+        : 'Withdrawals are not enabled for your account. Please add and save your bank or mobile money payout details first, then try again.';
+      throw new ForbiddenException(message);
     }
 
     if (dto.coins <= 0) {

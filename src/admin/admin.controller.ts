@@ -159,11 +159,16 @@ export class AdminController {
   }
 
   @Post('users/:id/reset-password')
-  async resetPassword(
-    @Param('id') id: string,
-    @Body() body: ResetPasswordDto,
-  ) {
+  async resetPassword(@Param('id') id: string, @Body() body: ResetPasswordDto) {
     return this.adminService.resetUserPassword(id, body.newPassword);
+  }
+
+  @Patch('users/:id/withdrawals')
+  async setAllowWithdrawals(
+    @Param('id') id: string,
+    @Body() body: { enabled: boolean },
+  ) {
+    return this.adminService.setAllowWithdrawals(id, body.enabled);
   }
 
   @Get('matches')
