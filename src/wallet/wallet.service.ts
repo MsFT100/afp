@@ -663,6 +663,14 @@ export class WalletsService {
     const fiatAmount = await this.convertCoinsToFiat(dto.coins, currency);
     const amountInSmallestUnit = Math.round(fiatAmount * 100);
 
+    const minFiat = this.minimumPayout(currency);
+    if (fiatAmount < minFiat) {
+      const minCoins = Math.ceil((minFiat / this.COIN_PRICE_USD) * 100) / 100;
+      throw new BadRequestException(
+        `The minimum you can withdraw is ${minFiat} ${currency} (about ${minCoins} coins).`,
+      );
+    }
+
     const dailyWithdrawn = await this.getDailyWithdrawalTotal(userId);
     if (dailyWithdrawn + dto.coins > Number(user.dailyWithdrawalLimit)) {
       throw new BadRequestException(
@@ -1033,11 +1041,26 @@ export class WalletsService {
       this.logger.warn(
         `No exchange rate found for USD/${normalized}, using 1:1`,
       );
-      return Math.round(usdAmount * 100) / 100;
+      throw new BadRequestException(
+        `We're unable to process withdrawals in ${normalized} right now. Please try again later or choose another withdrawal currency.`,
+      );
     }
 
     const fiat = usdAmount * Number(pair.rate);
     return Math.round(fiat * 100) / 100;
+  }
+
+  private minimumPayout(currency: string): number {
+    switch ((currency || '').toUpperCase()) {
+      case 'KES':
+        return 5;
+      case 'GHS':
+        return 1;
+      case 'NGN':
+        return 100;
+      default:
+        return 1;
+    }
   }
 
   private maskPhoneNumber(phoneNumber?: string | null): string {
