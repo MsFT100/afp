@@ -35,7 +35,7 @@ export class AuthService {
     phoneNumber: string,
     role?: UserRole,
     promoCode?: string,
-    giveWelcomeBonus: boolean = true,
+    giveWelcomeBonus: boolean = false,
   ): Promise<User> {
     const normalizedEmail = email.toLowerCase();
     const existingUser = await this.userRepository.findOne({
