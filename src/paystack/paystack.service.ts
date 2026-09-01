@@ -197,6 +197,7 @@ export class PaystackService {
       const mappedProvider = this.mapMobileMoneyProvider(provider!.toLowerCase());
       payload.bank_code = mappedProvider;
       payload.account_number = accountNumber.replace(/[\s-]/g, '');
+      payload.currency = this.mobileMoneyCurrency(mappedProvider);
     } else if (bankCode) {
       payload.bank_code = bankCode;
     }
@@ -239,15 +240,23 @@ export class PaystackService {
     switch ((provider || '').toUpperCase()) {
       case 'MPESA':
         return 'MPESA';
-      case 'AIRTEL':
-      case 'AIRTL':
-        return 'AIRTEL';
       case 'MTN':
         return 'MTN';
-      case 'VODAFONE':
-        return 'VODAFONE';
       default:
-        return provider.toUpperCase();
+        throw new BadRequestException(
+          `Unsupported mobile money provider: ${provider}. Only M-Pesa and MTN are supported.`,
+        );
+    }
+  }
+
+  private mobileMoneyCurrency(bankCode: string): string {
+    switch (bankCode) {
+      case 'MPESA':
+        return 'KES';
+      case 'MTN':
+        return 'GHS';
+      default:
+        return 'GHS';
     }
   }
 
