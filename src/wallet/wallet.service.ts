@@ -535,7 +535,7 @@ export class WalletsService {
     user.accountVerified = true;
     user.bankVerificationDate = new Date();
     user.bankVerificationMethod = 'account_resolution';
-    user.withdrawalCurrency = dto.currency || user.withdrawalCurrency || 'USD';
+    user.withdrawalCurrency = this.resolveWithdrawalCurrency(user, dto.currency);
     user.allowWithdrawals = true;
     user.paystackRecipientCode = null; // details changed, invalidate cached recipient
     if (dto.setAsDefault) {
@@ -567,7 +567,7 @@ export class WalletsService {
     user.mobileMoneyProvider = dto.provider;
     user.mobileMoneyNumber = cleaned;
     user.accountHolderName = dto.accountHolderName;
-    user.withdrawalCurrency = dto.currency || user.withdrawalCurrency || 'USD';
+    user.withdrawalCurrency = this.resolveWithdrawalCurrency(user, dto.currency);
     user.allowWithdrawals = true;
     user.paystackRecipientCode = null;
     if (dto.setAsDefault) {
@@ -659,7 +659,7 @@ export class WalletsService {
       );
     }
 
-    const currency = user.withdrawalCurrency || 'USD';
+    const currency = this.resolveWithdrawalCurrency(user);
     const fiatAmount = await this.convertCoinsToFiat(dto.coins, currency);
     const amountInSmallestUnit = Math.round(fiatAmount * 100);
 
@@ -1061,6 +1061,29 @@ export class WalletsService {
       default:
         return 1;
     }
+  }
+
+  private currencyForCountry(countryCode?: string | null): string | null {
+    switch (((countryCode || '').trim() || '').toUpperCase()) {
+      case 'KE':
+        return 'KES';
+      case 'GH':
+        return 'GHS';
+      case 'NG':
+        return 'NGN';
+      case 'ZA':
+        return 'ZAR';
+      default:
+        return null;
+    }
+  }
+
+  private resolveWithdrawalCurrency(user: User, requested?: string): string {
+    if (requested) return requested.toUpperCase();
+    const countryCurrency = this.currencyForCountry(user.countryCode);
+    if (countryCurrency) return countryCurrency;
+    if (user.withdrawalCurrency) return user.withdrawalCurrency.toUpperCase();
+    return 'USD';
   }
 
   private maskPhoneNumber(phoneNumber?: string | null): string {

@@ -26,6 +26,7 @@ import { PaystackWebhookModule } from './paystack/paystack.webhook.module';
 import { PaystackModule } from './paystack/paystack.module';
 import { PayPalWebhookModule } from './paypal/paypal.webhook.module';
 import { MatchmakingModule } from './matchmaking/matchmaking.module';
+import { PromotersModule } from './promoters/promoters.module';
 import { CurrencyPairsModule } from './currency/currency-pairs.module';
 import { CurrencyPair } from './currency/currency-pair.entity';
 
@@ -120,6 +121,7 @@ import { CurrencyPair } from './currency/currency-pair.entity';
     PayPalWebhookModule,
     MatchmakingModule,
     CurrencyPairsModule,
+    PromotersModule,
   ],
   controllers: [
     UsersController,
