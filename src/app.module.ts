@@ -29,6 +29,8 @@ import { MatchmakingModule } from './matchmaking/matchmaking.module';
 import { PromotersModule } from './promoters/promoters.module';
 import { CurrencyPairsModule } from './currency/currency-pairs.module';
 import { CurrencyPair } from './currency/currency-pair.entity';
+import { SettingsModule } from './settings/settings.module';
+import { Setting } from './settings/settings.entity';
 
 @Module({
   imports: [
@@ -95,6 +97,7 @@ import { CurrencyPair } from './currency/currency-pair.entity';
             Cue,
             Match,
             CurrencyPair,
+            Setting,
           ],
           synchronize: configService.get<string>('NODE_ENV') !== 'production',
         };
@@ -110,6 +113,7 @@ import { CurrencyPair } from './currency/currency-pair.entity';
       Cue,
       Match,
       CurrencyPair,
+      Setting,
     ]),
     AuthModule,
     TransactionsModule,
@@ -122,6 +126,7 @@ import { CurrencyPair } from './currency/currency-pair.entity';
     MatchmakingModule,
     CurrencyPairsModule,
     PromotersModule,
+    SettingsModule,
   ],
   controllers: [
     UsersController,

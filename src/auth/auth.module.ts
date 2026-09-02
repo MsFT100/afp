@@ -8,6 +8,7 @@ import { User } from '../users/user.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from '../mail/mail.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { WalletModule } from '../wallet/wallet.module';
     PassportModule,
     MailModule,
     WalletModule,
+    SettingsModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default-secret-key',
       signOptions: { expiresIn: '7d' },

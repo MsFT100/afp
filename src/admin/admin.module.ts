@@ -16,6 +16,7 @@ import { PayPalModule } from '../paypal/paypal.module';
 import { PaystackModule } from '../paystack/paystack.module';
 import { MatchmakingModule } from '../matchmaking/matchmaking.module';
 import { CurrencyPairsModule } from '../currency/currency-pairs.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CurrencyPairsModule } from '../currency/currency-pairs.module';
     PaystackModule,
     MatchmakingModule,
     CurrencyPairsModule,
+    SettingsModule,
   ],
   controllers: [AdminController],
   providers: [

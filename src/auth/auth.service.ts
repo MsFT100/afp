@@ -13,8 +13,10 @@ import { Repository } from 'typeorm';
 import { User, UserRole } from '../users/user.entity';
 import { MailService } from '../mail/mail.service';
 import { WalletsService } from '../wallet/wallet.service';
+import { SettingsService } from '../settings/settings.service';
 
-const WELCOME_BONUS = 30;
+export const WELCOME_BONUS_KEY = 'welcome_bonus';
+export const DEFAULT_WELCOME_BONUS = 50;
 
 @Injectable()
 export class AuthService {
@@ -26,6 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
     private mailService: MailService,
     private walletsService: WalletsService,
+    private settingsService: SettingsService,
   ) {}
 
   async register(
@@ -35,7 +38,7 @@ export class AuthService {
     phoneNumber: string,
     role?: UserRole,
     promoCode?: string,
-    giveWelcomeBonus: boolean = false,
+    giveWelcomeBonus: boolean = true,
   ): Promise<User> {
     const normalizedEmail = email.toLowerCase();
     const existingUser = await this.userRepository.findOne({
@@ -77,7 +80,11 @@ export class AuthService {
       });
 
     if (giveWelcomeBonus) {
-      await this.walletsService.addBalance(saved.id, WELCOME_BONUS);
+      const welcomeBonus = await this.settingsService.getNumber(
+        WELCOME_BONUS_KEY,
+        DEFAULT_WELCOME_BONUS,
+      );
+      await this.walletsService.addBalance(saved.id, welcomeBonus);
     }
 
     return saved;

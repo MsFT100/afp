@@ -12,6 +12,7 @@ import {
   Patch,
   Headers,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 
@@ -29,6 +30,8 @@ import { MatchmakingService } from '../matchmaking/matchmaking.service';
 import { CreatePromoterDto } from './dto/create-promoter.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdatePromoCodeDto } from './dto/update-promo-code.dto';
+import { SettingsService } from '../settings/settings.service';
+import { WELCOME_BONUS_KEY, DEFAULT_WELCOME_BONUS } from '../auth/auth.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,6 +42,7 @@ export class AdminController {
     private readonly avatarsService: AvatarsService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly matchmakingService: MatchmakingService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   @Get('stats/global')
@@ -220,5 +224,26 @@ export class AdminController {
     @Body('promoCode') promoCode?: string,
   ) {
     return this.adminService.convertToPromoter(userId, promoCode);
+  }
+
+  @Get('settings/welcome-bonus')
+  async getWelcomeBonus() {
+    const value = await this.settingsService.getNumber(
+      WELCOME_BONUS_KEY,
+      DEFAULT_WELCOME_BONUS,
+    );
+    return { value };
+  }
+
+  @Post('settings/welcome-bonus')
+  async setWelcomeBonus(@Body('value') value: number) {
+    if (typeof value !== 'number' || value < 0 || !Number.isInteger(value)) {
+      throw new BadRequestException('Value must be a non-negative integer');
+    }
+    const saved = await this.settingsService.setNumber(
+      WELCOME_BONUS_KEY,
+      value,
+    );
+    return { value: saved };
   }
 }
