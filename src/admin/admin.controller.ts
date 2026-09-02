@@ -37,6 +37,10 @@ import {
   REFERRAL_BONUS_KEY,
   DEFAULT_REFERRAL_BONUS,
 } from '../auth/auth.service';
+import {
+  WITHDRAWAL_FEE_KEY,
+  DEFAULT_WITHDRAWAL_FEE,
+} from '../wallet/wallet.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -268,6 +272,27 @@ export class AdminController {
     }
     const saved = await this.settingsService.setNumber(
       REFERRAL_BONUS_KEY,
+      value,
+    );
+    return { value: saved };
+  }
+
+  @Get('settings/withdrawal-fee')
+  async getWithdrawalFee() {
+    const value = await this.settingsService.getNumber(
+      WITHDRAWAL_FEE_KEY,
+      DEFAULT_WITHDRAWAL_FEE,
+    );
+    return { value };
+  }
+
+  @Post('settings/withdrawal-fee')
+  async setWithdrawalFee(@Body('value') value: number) {
+    if (typeof value !== 'number' || value < 0 || !Number.isFinite(value)) {
+      throw new BadRequestException('Value must be a non-negative number');
+    }
+    const saved = await this.settingsService.setNumber(
+      WITHDRAWAL_FEE_KEY,
       value,
     );
     return { value: saved };

@@ -106,6 +106,7 @@ export class WithdrawalResponseDto {
   reference!: string;
   coins!: number;
   amountInFiat?: number;
+  netAmountInFiat?: number;
   currency?: string;
   fee?: number;
   status!: 'pending' | 'success' | 'failed';

@@ -19,6 +19,7 @@ import {
 import { TransactionsService } from '../transactions/transactions.service';
 import { PaystackService } from '../paystack/paystack.service';
 import { PayPalService } from '../paypal/paypal.service';
+import { SettingsService } from '../settings/settings.service';
 import {
   InitiateWithdrawalDto,
   SaveBankDetailsDto,
@@ -28,6 +29,10 @@ import {
   WithdrawalStatsDto,
   WithdrawalMethod,
 } from './dto/withdrawal.dto';
+
+export const WITHDRAWAL_FEE_KEY = 'withdrawal_fee';
+export const DEFAULT_WITHDRAWAL_FEE = 20;
+export const MIN_WITHDRAWAL_COINS = 150;
 
 @Injectable()
 export class WalletsService {
@@ -46,6 +51,7 @@ export class WalletsService {
     private paystackService: PaystackService,
     private configService: ConfigService,
     public transactionsService: TransactionsService,
+    private settingsService: SettingsService,
   ) {}
 
   async getOrCreateWallet(userId: string): Promise<Wallet> {
@@ -614,6 +620,11 @@ export class WalletsService {
       allowWithdrawals: user.allowWithdrawals,
       withdrawalCurrency: user.withdrawalCurrency,
       withdrawalLimits: await this.getWithdrawalLimits(userId),
+      withdrawalFee: await this.settingsService.getNumber(
+        WITHDRAWAL_FEE_KEY,
+        DEFAULT_WITHDRAWAL_FEE,
+      ),
+      minWithdrawalCoins: MIN_WITHDRAWAL_COINS,
     };
   }
 
@@ -653,6 +664,12 @@ export class WalletsService {
       throw new BadRequestException('Withdrawal amount must be greater than 0');
     }
 
+    if (dto.coins < MIN_WITHDRAWAL_COINS) {
+      throw new BadRequestException(
+        `The minimum you can withdraw is ${MIN_WITHDRAWAL_COINS} coins.`,
+      );
+    }
+
     if (Number(user.wallet.balance) < dto.coins) {
       throw new BadRequestException(
         `Insufficient balance. Available: ${Number(user.wallet.balance)} coins`,
@@ -661,7 +678,17 @@ export class WalletsService {
 
     const currency = this.resolveWithdrawalCurrency(user);
     const fiatAmount = await this.convertCoinsToFiat(dto.coins, currency);
-    const amountInSmallestUnit = Math.round(fiatAmount * 100);
+    const withdrawalFee =
+      await this.settingsService.getNumber(WITHDRAWAL_FEE_KEY, DEFAULT_WITHDRAWAL_FEE);
+
+    if (fiatAmount <= withdrawalFee) {
+      throw new BadRequestException(
+        `Withdrawal amount is too small after the ${withdrawalFee} ${currency} transaction fee.`,
+      );
+    }
+
+    const netFiatAmount = Math.round((fiatAmount - withdrawalFee) * 100) / 100;
+    const amountInSmallestUnit = Math.round(netFiatAmount * 100);
 
     const minFiat = this.minimumPayout(currency);
     if (fiatAmount < minFiat) {
@@ -774,7 +801,7 @@ export class WalletsService {
         await this.paystackService.getTransferFee(amountInSmallestUnit);
 
       this.logger.log(
-        `Withdrawal initiated for user ${userId}: ${reference}, coins: ${dto.coins}, fiat: ${fiatAmount} ${currency}`,
+        `Withdrawal initiated for user ${userId}: ${reference}, coins: ${dto.coins}, fiat: ${fiatAmount} ${currency}, net: ${netFiatAmount} ${currency}, fee: ${withdrawalFee} ${currency}`,
       );
 
       return {
@@ -784,8 +811,9 @@ export class WalletsService {
         reference,
         coins: dto.coins,
         amountInFiat: fiatAmount,
+        netAmountInFiat: netFiatAmount,
+        fee: withdrawalFee,
         currency,
-        fee: fee / 100,
         status: 'pending',
         estimatedArrival: '2-24 hours depending on your bank',
       };

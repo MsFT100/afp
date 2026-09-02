@@ -9,6 +9,7 @@ import { CurrencyPairsModule } from '../currency/currency-pairs.module';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { PaystackModule } from '../paystack/paystack.module';
 import { PayPalModule } from '../paypal/paypal.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PayPalModule } from '../paypal/paypal.module';
     TransactionsModule,
     PaystackModule,
     PayPalModule,
+    SettingsModule,
   ],
   providers: [WalletsService],
   controllers: [WalletsController],
