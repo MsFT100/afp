@@ -201,7 +201,9 @@ export class UsersService {
         'isActive',
         'promoCode',
         'lastLoginAt',
+        'createdAt',
       ],
+      order: { createdAt: 'DESC' },
     });
   }
 

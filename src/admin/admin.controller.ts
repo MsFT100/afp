@@ -31,7 +31,12 @@ import { CreatePromoterDto } from './dto/create-promoter.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdatePromoCodeDto } from './dto/update-promo-code.dto';
 import { SettingsService } from '../settings/settings.service';
-import { WELCOME_BONUS_KEY, DEFAULT_WELCOME_BONUS } from '../auth/auth.service';
+import {
+  WELCOME_BONUS_KEY,
+  DEFAULT_WELCOME_BONUS,
+  REFERRAL_BONUS_KEY,
+  DEFAULT_REFERRAL_BONUS,
+} from '../auth/auth.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -242,6 +247,27 @@ export class AdminController {
     }
     const saved = await this.settingsService.setNumber(
       WELCOME_BONUS_KEY,
+      value,
+    );
+    return { value: saved };
+  }
+
+  @Get('settings/referral-bonus')
+  async getReferralBonus() {
+    const value = await this.settingsService.getNumber(
+      REFERRAL_BONUS_KEY,
+      DEFAULT_REFERRAL_BONUS,
+    );
+    return { value };
+  }
+
+  @Post('settings/referral-bonus')
+  async setReferralBonus(@Body('value') value: number) {
+    if (typeof value !== 'number' || value < 0 || !Number.isInteger(value)) {
+      throw new BadRequestException('Value must be a non-negative integer');
+    }
+    const saved = await this.settingsService.setNumber(
+      REFERRAL_BONUS_KEY,
       value,
     );
     return { value: saved };

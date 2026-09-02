@@ -17,6 +17,8 @@ import { SettingsService } from '../settings/settings.service';
 
 export const WELCOME_BONUS_KEY = 'welcome_bonus';
 export const DEFAULT_WELCOME_BONUS = 50;
+export const REFERRAL_BONUS_KEY = 'referral_bonus';
+export const DEFAULT_REFERRAL_BONUS = 20;
 
 @Injectable()
 export class AuthService {
@@ -48,12 +50,22 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    if (promoCode) {
-      const existingPromo = await this.userRepository.findOne({
-        where: { promoCode },
+    let referredBy: User | undefined;
+    let ownedPromoCode: string | undefined;
+    const normalizedPromo = promoCode?.trim();
+
+    if (normalizedPromo) {
+      const promoOwner = await this.userRepository.findOne({
+        where: { promoCode: normalizedPromo },
       });
-      if (existingPromo) {
-        throw new ConflictException('Promo code is already in use');
+
+      if (promoOwner) {
+        if (promoOwner.role === UserRole.PROMOTER) {
+          referredBy = promoOwner;
+          ownedPromoCode = undefined;
+        } else {
+          throw new ConflictException('Promo code is already in use');
+        }
       }
     }
 
@@ -65,7 +77,8 @@ export class AuthService {
       displayName,
       phoneNumber,
       role: role || UserRole.PLAYER,
-      promoCode,
+      promoCode: ownedPromoCode,
+      referredBy,
     });
 
     const saved = await this.userRepository.save(userEntity);

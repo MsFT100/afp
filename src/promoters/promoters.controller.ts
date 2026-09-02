@@ -22,4 +22,11 @@ export class PromotersController {
   async me(@Request() req) {
     return this.promotersService.getProfile(req.user.id);
   }
+
+  @Get('/me/referrals')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROMOTER)
+  async myReferrals(@Request() req) {
+    return this.promotersService.getReferrals(req.user.id);
+  }
 }
