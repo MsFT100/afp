@@ -153,7 +153,7 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   paystackRecipientCode?: string | null;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: false })
   allowWithdrawals!: boolean;
 
   @Column({ type: 'int', default: 0 })

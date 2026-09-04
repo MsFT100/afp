@@ -542,7 +542,6 @@ export class WalletsService {
     user.bankVerificationDate = new Date();
     user.bankVerificationMethod = 'account_resolution';
     user.withdrawalCurrency = this.resolveWithdrawalCurrency(user, dto.currency);
-    user.allowWithdrawals = true;
     user.paystackRecipientCode = null; // details changed, invalidate cached recipient
     if (dto.setAsDefault) {
       user.preferredWithdrawalMethod = WithdrawalMethod.BANK_TRANSFER;
@@ -574,7 +573,6 @@ export class WalletsService {
     user.mobileMoneyNumber = cleaned;
     user.accountHolderName = dto.accountHolderName;
     user.withdrawalCurrency = this.resolveWithdrawalCurrency(user, dto.currency);
-    user.allowWithdrawals = true;
     user.paystackRecipientCode = null;
     if (dto.setAsDefault) {
       user.preferredWithdrawalMethod = WithdrawalMethod.MOBILE_MONEY;
@@ -651,13 +649,9 @@ export class WalletsService {
     if (!user.wallet) throw new NotFoundException('Wallet not found');
 
     if (!user.allowWithdrawals) {
-      const hasPayoutDetails = Boolean(
-        user.bankCode || user.mobileMoneyProvider,
+      throw new ForbiddenException(
+        'Withdrawal activation required. Please contact APP Support.',
       );
-      const message = hasPayoutDetails
-        ? 'Withdrawals are not enabled for your account. Re-save your bank or mobile money details, or contact support.'
-        : 'Withdrawals are not enabled for your account. Please add and save your bank or mobile money payout details first, then try again.';
-      throw new ForbiddenException(message);
     }
 
     if (dto.coins <= 0) {

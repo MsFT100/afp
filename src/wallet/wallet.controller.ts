@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { WalletsService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { TransactionType } from '../transactions/transaction.entity';
 import {
   InitiateWithdrawalDto,
   SaveBankDetailsDto,
@@ -29,21 +28,6 @@ export class WalletsController {
   async getBalance(@Req() req: any) {
     const wallet = await this.walletsService.getOrCreateWallet(req.user.id);
     return { balance: wallet.balance };
-  }
-
-  @Post('add-balance')
-  async addBalance(@Req() req: any, @Body('amount') amount: number) {
-    return this.walletsService.addBalance(req.user.id, amount);
-  }
-
-  @Post('deduct-balance')
-  async removeBalance(@Req() req: any, @Body('amount') amount: number) {
-    return this.walletsService.deductBalance(
-      req.user.id,
-      amount,
-      TransactionType.MANUAL_ADJUSTMENT,
-      'unknown',
-    );
   }
 
   @Post('paystack/initialize')
