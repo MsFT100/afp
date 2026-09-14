@@ -133,6 +133,9 @@ export class UsersService {
   }
 
   async addBoughtCue(userId: string, index: number, cost: number) {
+    if (!Number.isFinite(cost) || cost <= 0) {
+      throw new BadRequestException('A valid cost is required to buy a cue');
+    }
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -156,6 +159,11 @@ export class UsersService {
   }
 
   async addBoughtChat(userId: string, index: number, cost: number) {
+    if (!Number.isFinite(cost) || cost <= 0) {
+      throw new BadRequestException(
+        'A valid cost is required to buy a chat pack',
+      );
+    }
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 

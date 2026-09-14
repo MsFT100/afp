@@ -60,17 +60,19 @@ export class MatchmakingService {
       .createQueryBuilder('match')
       .innerJoin('match.players', 'player')
       .leftJoin('match.winner', 'winner')
+      .leftJoin('player.activeAvatar', 'avatar')
       .select([
         'player.displayName AS name',
         'player.countryCode AS country',
         'player.region AS region',
+        'avatar.imageUrl AS "avatarUrl"',
         'COUNT(CASE WHEN winner.id = player.id THEN 1 END) AS wins',
         'SUM(CASE WHEN winner.id = player.id THEN match.winAmount ELSE 0 END) AS coins',
         'COUNT(match.id) AS "totalGames"',
         'CAST(COUNT(CASE WHEN winner.id = player.id THEN 1 END) AS DECIMAL(10,2)) / NULLIF(COUNT(match.id), 0) * 100 AS "winRate"',
       ])
       .groupBy(
-        'player.id, player.displayName, player.countryCode, player.region',
+        'player.id, player.displayName, player.countryCode, player.region, avatar.imageUrl',
       )
       .offset(offset)
       .limit(limit);
@@ -95,6 +97,7 @@ export class MatchmakingService {
     const results = await query.getRawMany();
     const leaderboardData = results.map((row, index) => ({
       name: row.name,
+      avatarUrl: row.avatarUrl || null,
       country: row.country,
       region: row.region,
       wins: parseInt(row.wins, 10),
@@ -183,7 +186,11 @@ export class MatchmakingService {
           `match_${savedMatch.id}_loser_deduct`,
         );
       }
-      await this.walletsService.addBalance(winnerId, dto.winAmount);
+      await this.walletsService.addBalance(
+        winnerId,
+        dto.winAmount,
+        TransactionType.MATCH_WIN,
+      );
     } catch (err) {
       this.logger.error(
         'Wallet transaction failed for match ' + savedMatch.id,

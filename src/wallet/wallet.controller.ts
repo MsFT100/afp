@@ -30,6 +30,19 @@ export class WalletsController {
     return { balance: wallet.balance };
   }
 
+  @Get('transactions')
+  async getTransactions(
+    @Req() req: any,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    return this.walletsService.transactionsService.findUserTransactions(
+      req.user.id,
+      page,
+      limit,
+    );
+  }
+
   @Post('paystack/initialize')
   async initializePaystack(
     @Req() req: any,

@@ -13,6 +13,7 @@ import { User } from '../users/user.entity';
 import { CurrencyPair } from '../currency/currency-pair.entity';
 import { ConfigService } from '@nestjs/config';
 import {
+  TransactionDirection,
   TransactionStatus,
   TransactionType,
 } from '../transactions/transaction.entity';
@@ -93,24 +94,35 @@ export class WalletsService {
       reference,
       TransactionStatus.SUCCESS,
       type,
+      TransactionDirection.DEBIT,
+      currentBalance,
+      Number(updatedWallet.balance),
     );
 
     return updatedWallet;
   }
 
-  async addBalance(userId: string, amount: number): Promise<Wallet> {
+  async addBalance(
+    userId: string,
+    amount: number,
+    type: TransactionType = TransactionType.MANUAL_ADJUSTMENT,
+  ): Promise<Wallet> {
     const wallet = await this.getOrCreateWallet(userId);
-    wallet.balance = Number(wallet.balance) + amount;
+    const balanceBefore = Number(wallet.balance);
+    wallet.balance = balanceBefore + amount;
     const updatedWallet = await this.walletRepository.save(wallet);
 
-    // Record the transaction for the manual balance addition
+    // Record the transaction for the balance addition
     const reference = `manual_deposit_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     await this.transactionsService.createTransaction(
       wallet.user, // User is now guaranteed to be loaded with the wallet
       amount,
       reference,
       TransactionStatus.SUCCESS,
-      TransactionType.MANUAL_ADJUSTMENT,
+      type,
+      TransactionDirection.CREDIT,
+      balanceBefore,
+      Number(updatedWallet.balance),
     );
 
     return updatedWallet;
@@ -380,12 +392,18 @@ export class WalletsService {
     const coinAmount = await this.convertToCoins(amount, currency);
 
     // Update wallet balance with coin amount
-    wallet.balance = Number(wallet.balance) + coinAmount;
+    const balanceBefore = Number(wallet.balance);
+    wallet.balance = balanceBefore + coinAmount;
     const updatedWallet = await this.walletRepository.save(wallet);
 
     // Update or create transaction record with coin amount
     await this.transactionsService
-      .updateTransactionStatus(reference, TransactionStatus.SUCCESS, coinAmount)
+      .updateTransactionStatus(
+        reference,
+        TransactionStatus.SUCCESS,
+        coinAmount,
+        Number(updatedWallet.balance),
+      )
       .catch(async () => {
         await this.transactionsService.createTransaction(
           wallet.user,
@@ -393,6 +411,9 @@ export class WalletsService {
           reference,
           TransactionStatus.SUCCESS,
           type,
+          TransactionDirection.CREDIT,
+          balanceBefore,
+          Number(updatedWallet.balance),
         );
       });
     return updatedWallet;
@@ -476,10 +497,12 @@ export class WalletsService {
 
     const reference = `transfer_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    sender.wallet.balance = Number(sender.wallet.balance) - amount;
+    const senderBefore = Number(sender.wallet.balance);
+    sender.wallet.balance = senderBefore - amount;
     await this.walletRepository.save(sender.wallet);
 
-    recipientWallet.balance = Number(recipientWallet.balance) + amount;
+    const recipientBefore = Number(recipientWallet.balance);
+    recipientWallet.balance = recipientBefore + amount;
     await this.walletRepository.save(recipientWallet);
 
     await this.transactionsService.createTransaction(
@@ -488,6 +511,9 @@ export class WalletsService {
       reference,
       TransactionStatus.SUCCESS,
       TransactionType.TRANSFER,
+      TransactionDirection.DEBIT,
+      senderBefore,
+      Number(sender.wallet.balance),
     );
 
     await this.transactionsService.createTransaction(
@@ -496,6 +522,9 @@ export class WalletsService {
       reference,
       TransactionStatus.SUCCESS,
       TransactionType.TRANSFER,
+      TransactionDirection.CREDIT,
+      recipientBefore,
+      Number(recipientWallet.balance),
     );
 
     return {
@@ -541,7 +570,10 @@ export class WalletsService {
     user.accountVerified = true;
     user.bankVerificationDate = new Date();
     user.bankVerificationMethod = 'account_resolution';
-    user.withdrawalCurrency = this.resolveWithdrawalCurrency(user, dto.currency);
+    user.withdrawalCurrency = this.resolveWithdrawalCurrency(
+      user,
+      dto.currency,
+    );
     user.paystackRecipientCode = null; // details changed, invalidate cached recipient
     if (dto.setAsDefault) {
       user.preferredWithdrawalMethod = WithdrawalMethod.BANK_TRANSFER;
@@ -572,7 +604,10 @@ export class WalletsService {
     user.mobileMoneyProvider = dto.provider;
     user.mobileMoneyNumber = cleaned;
     user.accountHolderName = dto.accountHolderName;
-    user.withdrawalCurrency = this.resolveWithdrawalCurrency(user, dto.currency);
+    user.withdrawalCurrency = this.resolveWithdrawalCurrency(
+      user,
+      dto.currency,
+    );
     user.paystackRecipientCode = null;
     if (dto.setAsDefault) {
       user.preferredWithdrawalMethod = WithdrawalMethod.MOBILE_MONEY;
@@ -672,8 +707,10 @@ export class WalletsService {
 
     const currency = this.resolveWithdrawalCurrency(user);
     const fiatAmount = await this.convertCoinsToFiat(dto.coins, currency);
-    const withdrawalFee =
-      await this.settingsService.getNumber(WITHDRAWAL_FEE_KEY, DEFAULT_WITHDRAWAL_FEE);
+    const withdrawalFee = await this.settingsService.getNumber(
+      WITHDRAWAL_FEE_KEY,
+      DEFAULT_WITHDRAWAL_FEE,
+    );
 
     if (fiatAmount <= withdrawalFee) {
       throw new BadRequestException(
@@ -775,7 +812,8 @@ export class WalletsService {
 
       // Deduct coins immediately (optimistic)
       const wallet = user.wallet;
-      wallet.balance = Number(wallet.balance) - dto.coins;
+      const balanceBefore = Number(wallet.balance);
+      wallet.balance = balanceBefore - dto.coins;
       await this.walletRepository.save(wallet);
 
       await this.transactionsService.createTransaction(
@@ -784,6 +822,9 @@ export class WalletsService {
         reference,
         TransactionStatus.PENDING,
         TransactionType.WITHDRAWAL,
+        TransactionDirection.DEBIT,
+        balanceBefore,
+        Number(wallet.balance),
       );
 
       user.monthlyWithdrawalTotal = monthlyWithdrawn + dto.coins;
@@ -878,10 +919,13 @@ export class WalletsService {
     const wallet = await this.getOrCreateWallet(user.id);
     wallet.balance = Number(wallet.balance) + Number(transaction.amount);
     await this.walletRepository.save(wallet);
+    const balanceAfter = Number(wallet.balance);
 
     await this.transactionsService.updateTransactionStatus(
       reference,
       TransactionStatus.FAILED,
+      undefined,
+      balanceAfter,
     );
 
     user.consecutiveWithdrawalFailures =

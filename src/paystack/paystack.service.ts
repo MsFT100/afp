@@ -194,7 +194,9 @@ export class PaystackService {
     };
 
     if (type === 'mobile_money') {
-      const mappedProvider = this.mapMobileMoneyProvider(provider!.toLowerCase());
+      const mappedProvider = this.mapMobileMoneyProvider(
+        provider!.toLowerCase(),
+      );
       payload.bank_code = mappedProvider;
       payload.account_number = accountNumber.replace(/[\s-]/g, '');
       payload.currency = this.mobileMoneyCurrency(mappedProvider);
@@ -266,7 +268,7 @@ export class PaystackService {
    * @param amount Amount in the smallest currency unit (kobo/cents)
    * @param reason Withdrawal reason/description
    * @param reference Our idempotency key; also used to match webhooks
-   */  async initiateTransfer(
+   */ async initiateTransfer(
     recipientCode: string,
     amount: number,
     reason: string,

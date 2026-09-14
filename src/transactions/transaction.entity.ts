@@ -21,6 +21,12 @@ export enum TransactionType {
   PURCHASE = 'purchase',
   PAYPAL_DEPOSIT = 'paypal_deposit',
   TABLE_FEE = 'table_fee',
+  MATCH_WIN = 'match_win',
+}
+
+export enum TransactionDirection {
+  CREDIT = 'credit',
+  DEBIT = 'debit',
 }
 
 @Entity()
@@ -46,6 +52,19 @@ export class Transaction {
 
   @Column({ type: 'enum', enum: TransactionType })
   type!: TransactionType;
+
+  @Column({
+    type: 'enum',
+    enum: TransactionDirection,
+    nullable: true,
+  })
+  direction?: TransactionDirection;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  balanceBefore?: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  balanceAfter?: number;
 
   @CreateDateColumn()
   createdAt: Date = new Date();

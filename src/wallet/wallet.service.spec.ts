@@ -14,7 +14,9 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { PaystackService } from '../paystack/paystack.service';
 import { PayPalService } from '../paypal/paypal.service';
 import { ConfigService } from '@nestjs/config';
+import { SettingsService } from '../settings/settings.service';
 import {
+  TransactionDirection,
   TransactionStatus,
   TransactionType,
 } from '../transactions/transaction.entity';
@@ -90,6 +92,13 @@ describe('WalletsService', () => {
         { provide: PaystackService, useValue: paystackService },
         { provide: PayPalService, useValue: { createOrder: jest.fn() } },
         { provide: ConfigService, useValue: configService },
+        {
+          provide: SettingsService,
+          useValue: {
+            getNumber: jest.fn().mockResolvedValue(20),
+            get: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -260,7 +269,7 @@ describe('WalletsService', () => {
       expect(result.coins).toBe(5000);
       expect(paystackService.initiateTransfer).toHaveBeenCalledWith(
         'RCP_test',
-        5000, // 5000 coins * $0.01 = $50 -> 5000 cents
+        3000, // 5000 coins * $0.01 = $50, minus 20 USD fee = $30 -> 3000 cents
         expect.any(String),
         expect.stringContaining('withdrawal_'),
       );
@@ -275,6 +284,9 @@ describe('WalletsService', () => {
         expect.any(String),
         TransactionStatus.PENDING,
         TransactionType.WITHDRAWAL,
+        TransactionDirection.DEBIT,
+        10000,
+        5000,
       );
     });
 
@@ -304,7 +316,7 @@ describe('WalletsService', () => {
 
       await expect(
         service.initiateWithdrawal('user-1', {
-          coins: 1000,
+          coins: 5000,
           withdrawalMethod: WithdrawalMethod.BANK_TRANSFER,
         }),
       ).rejects.toThrow('Bank details are required');
@@ -332,7 +344,7 @@ describe('WalletsService', () => {
 
       await expect(
         service.initiateWithdrawal('user-1', {
-          coins: 1000,
+          coins: 5000,
           withdrawalMethod: WithdrawalMethod.BANK_TRANSFER,
         }),
       ).rejects.toThrow('Daily withdrawal limit exceeded');

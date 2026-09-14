@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   Transaction,
+  TransactionDirection,
   TransactionStatus,
   TransactionType,
 } from './transaction.entity';
@@ -21,6 +22,9 @@ export class TransactionsService {
     reference: string,
     status: TransactionStatus,
     type: TransactionType,
+    direction?: TransactionDirection,
+    balanceBefore?: number,
+    balanceAfter?: number,
   ): Promise<Transaction> {
     const transaction = this.transactionsRepository.create({
       user,
@@ -28,6 +32,9 @@ export class TransactionsService {
       reference,
       status,
       type,
+      direction,
+      balanceBefore,
+      balanceAfter,
     });
     return this.transactionsRepository.save(transaction);
   }
@@ -40,10 +47,38 @@ export class TransactionsService {
     });
   }
 
+  async findUserTransactions(
+    userId: string,
+    page = 1,
+    limit = 50,
+  ): Promise<{
+    data: Transaction[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const [data, total] = await this.transactionsRepository.findAndCount({
+      where: { user: { id: userId } },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   async updateTransactionStatus(
     reference: string,
     status: TransactionStatus,
     amount?: number,
+    balanceAfter?: number,
   ): Promise<Transaction> {
     const transaction = await this.transactionsRepository.findOne({
       where: { reference },
@@ -56,6 +91,9 @@ export class TransactionsService {
     transaction.status = status;
     if (amount !== undefined) {
       transaction.amount = amount; // Update amount if provided (e.g., after verification)
+    }
+    if (balanceAfter !== undefined) {
+      transaction.balanceAfter = balanceAfter;
     }
     return this.transactionsRepository.save(transaction);
   }

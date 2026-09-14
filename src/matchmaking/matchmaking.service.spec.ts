@@ -152,7 +152,11 @@ describe('MatchmakingService', () => {
         `match_${savedMatchId}_loser_deduct`,
       );
 
-      expect(walletsService.addBalance).toHaveBeenCalledWith(winnerId, 180);
+      expect(walletsService.addBalance).toHaveBeenCalledWith(
+        winnerId,
+        180,
+        TransactionType.MATCH_WIN,
+      );
 
       expect(result).toBe(savedMatch);
     });
@@ -192,7 +196,11 @@ describe('MatchmakingService', () => {
         TransactionType.TABLE_FEE,
         `match_${savedMatchId}_winner_deduct`,
       );
-      expect(walletsService.addBalance).toHaveBeenCalledWith(winnerId, 180);
+      expect(walletsService.addBalance).toHaveBeenCalledWith(
+        winnerId,
+        180,
+        TransactionType.MATCH_WIN,
+      );
     });
 
     it('should update countryCode when provided and user has none', async () => {
