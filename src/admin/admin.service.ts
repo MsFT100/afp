@@ -15,6 +15,7 @@ import {
 } from '../transactions/transaction.entity';
 import { Avatar } from '../avatars/avatar.entity';
 import { WalletsService } from '../wallet/wallet.service';
+import { Wallet } from '../wallet/wallet.entity';
 import { AuthService } from '../auth/auth.service';
 import { CurrencyPairsService } from '../currency/currency-pairs.service';
 import { CurrencyPair } from '../currency/currency-pair.entity';
@@ -30,6 +31,8 @@ export class AdminService {
     private avatarRepository: Repository<Avatar>,
     @InjectRepository(CurrencyPair)
     private currencyPairRepository: Repository<CurrencyPair>,
+    @InjectRepository(Wallet)
+    private walletRepository: Repository<Wallet>,
     private walletsService: WalletsService,
     private authService: AuthService,
     private currencyPairsService: CurrencyPairsService,
@@ -51,6 +54,18 @@ export class AdminService {
       type: TransactionType.PURCHASE,
     });
 
+    const totalTableFees = await this.transactionRepository.sum('amount', {
+      status: TransactionStatus.SUCCESS,
+      type: TransactionType.TABLE_FEE,
+    });
+
+    const totalCoinsAwarded = await this.transactionRepository.sum('amount', {
+      status: TransactionStatus.SUCCESS,
+      type: TransactionType.MATCH_WIN,
+    });
+
+    const totalCoinsHeld = await this.walletRepository.sum('balance');
+
     const promoterCount = await this.userRepository.count({
       where: { role: UserRole.PROMOTER },
     });
@@ -61,12 +76,20 @@ export class AdminService {
       where: { role: In([UserRole.PLAYER, UserRole.PROMOTER]) },
     });
 
+    const coinsHeld = parseFloat(String(totalCoinsHeld || '0'));
+    const tableFees = parseFloat(String(totalTableFees || '0'));
+    const coinsAwarded = parseFloat(String(totalCoinsAwarded || '0'));
+
     return {
       totalDeposits: parseFloat(String(totalDeposits || '0')),
       totalWithdrawals: parseFloat(String(totalWithdrawals || '0')),
       totalPurchaseValue: parseFloat(String(totalPurchases || '0')),
       totalPromoters: promoterCount,
       totalPlayers: playerCount,
+      totalTableFees: tableFees,
+      totalCoinsAwarded: coinsAwarded,
+      totalRetainerValue: Math.round((tableFees - coinsAwarded) * 100) / 100,
+      totalCoinsHeld: Math.round(coinsHeld * 100) / 100,
     };
   }
 
