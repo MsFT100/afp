@@ -30,6 +30,7 @@ import { MatchmakingService } from '../matchmaking/matchmaking.service';
 import { CreatePromoterDto } from './dto/create-promoter.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdatePromoCodeDto } from './dto/update-promo-code.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { SettingsService } from '../settings/settings.service';
 import {
   WELCOME_BONUS_KEY,
@@ -153,11 +154,7 @@ export class AdminController {
   }
 
   @Patch('users/:id')
-  async updatePlayer(
-    @Param('id') id: string,
-    @Body()
-    body: { displayName?: string; email?: string; phoneNumber?: string },
-  ) {
+  async updatePlayer(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.adminService.updateUser(id, body);
   }
 

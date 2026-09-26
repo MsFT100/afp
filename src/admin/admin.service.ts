@@ -19,6 +19,7 @@ import { Wallet } from '../wallet/wallet.entity';
 import { AuthService } from '../auth/auth.service';
 import { CurrencyPairsService } from '../currency/currency-pairs.service';
 import { CurrencyPair } from '../currency/currency-pair.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AdminService {
@@ -322,16 +323,16 @@ export class AdminService {
     };
   }
 
-  async updateUser(
-    userId: string,
-    data: { displayName?: string; email?: string; phoneNumber?: string },
-  ): Promise<User> {
+  async updateUser(userId: string, data: UpdateUserDto): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     if (data.displayName !== undefined) user.displayName = data.displayName;
     if (data.email !== undefined) user.email = data.email;
     if (data.phoneNumber !== undefined) user.phoneNumber = data.phoneNumber;
+    if (data.countryCode !== undefined) {
+      user.countryCode = data.countryCode.trim().toUpperCase() || null;
+    }
 
     return this.userRepository.save(user);
   }
