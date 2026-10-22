@@ -33,6 +33,7 @@ import {
 
 export const WITHDRAWAL_FEE_KEY = 'withdrawal_fee';
 export const DEFAULT_WITHDRAWAL_FEE = 20;
+export const MIN_WITHDRAWAL_KEY = 'minimum_withdrawal';
 export const MIN_WITHDRAWAL_COINS = 150;
 
 @Injectable()
@@ -657,7 +658,7 @@ export class WalletsService {
         WITHDRAWAL_FEE_KEY,
         DEFAULT_WITHDRAWAL_FEE,
       ),
-      minWithdrawalCoins: MIN_WITHDRAWAL_COINS,
+      minWithdrawalCoins: await this.getMinimumWithdrawal(),
     };
   }
 
@@ -693,9 +694,10 @@ export class WalletsService {
       throw new BadRequestException('Withdrawal amount must be greater than 0');
     }
 
-    if (dto.coins < MIN_WITHDRAWAL_COINS) {
+    const minWithdrawal = await this.getMinimumWithdrawal();
+    if (dto.coins < minWithdrawal) {
       throw new BadRequestException(
-        `The minimum you can withdraw is ${MIN_WITHDRAWAL_COINS} coins.`,
+        `The minimum you can withdraw is ${minWithdrawal} coins.`,
       );
     }
 
@@ -1037,6 +1039,14 @@ export class WalletsService {
   }
 
   // ==================== WITHDRAWAL HELPERS ====================
+
+  async getMinimumWithdrawal(): Promise<number> {
+    const value = await this.settingsService.getNumber(
+      MIN_WITHDRAWAL_KEY,
+      MIN_WITHDRAWAL_COINS,
+    );
+    return value > 0 ? value : MIN_WITHDRAWAL_COINS;
+  }
 
   private async getOrCreateRecipient(
     user: User,

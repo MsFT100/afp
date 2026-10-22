@@ -41,6 +41,8 @@ import {
 import {
   WITHDRAWAL_FEE_KEY,
   DEFAULT_WITHDRAWAL_FEE,
+  MIN_WITHDRAWAL_KEY,
+  MIN_WITHDRAWAL_COINS,
 } from '../wallet/wallet.service';
 
 @Controller('admin')
@@ -291,6 +293,32 @@ export class AdminController {
     const saved = await this.settingsService.setNumber(
       WITHDRAWAL_FEE_KEY,
       value,
+    );
+    return { value: saved };
+  }
+
+  @Get('settings/minimum-withdrawal')
+  async getMinimumWithdrawal() {
+    const value = await this.settingsService.getNumber(
+      MIN_WITHDRAWAL_KEY,
+      MIN_WITHDRAWAL_COINS,
+    );
+    return { value };
+  }
+
+  @Post('settings/minimum-withdrawal')
+  async setMinimumWithdrawal(@Body('value') value: number) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      throw new BadRequestException('Value must be a number');
+    }
+    if (value < 1) {
+      throw new BadRequestException(
+        'Minimum withdrawal must be at least 1 coin',
+      );
+    }
+    const saved = await this.settingsService.setNumber(
+      MIN_WITHDRAWAL_KEY,
+      Math.round(value),
     );
     return { value: saved };
   }
